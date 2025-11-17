@@ -2,6 +2,13 @@
 
 source 'https://rubygems.org'
 
+# Ruby 3.4+ standard library gems that need to be explicit
+gem 'base64'
+gem 'bigdecimal'
+gem 'digest'
+gem 'set'
+gem 'tmpdir'
+
 group :development do
   gem 'rake'
   gem 'redcarpet'
