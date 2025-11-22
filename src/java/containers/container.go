@@ -51,7 +51,12 @@ func (r *Registry) Register(c Container) {
 // Detect finds the first container that can handle the application
 func (r *Registry) Detect() (Container, string, error) {
 	for _, container := range r.containers {
-		if name, err := container.Detect(); err == nil && name != "" {
+		name, err := container.Detect()
+		if err != nil {
+			// Propagate errors (e.g., validation failures)
+			return nil, "", err
+		}
+		if name != "" {
 			return container, name, nil
 		}
 	}
@@ -64,7 +69,12 @@ func (r *Registry) DetectAll() ([]Container, []string, error) {
 	var names []string
 
 	for _, container := range r.containers {
-		if name, err := container.Detect(); err == nil && name != "" {
+		name, err := container.Detect()
+		if err != nil {
+			// Propagate errors (e.g., validation failures)
+			return nil, nil, err
+		}
+		if name != "" {
 			matched = append(matched, container)
 			names = append(names, name)
 		}

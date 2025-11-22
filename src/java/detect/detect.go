@@ -97,7 +97,11 @@ func Run(d *Detector) error {
 		return nil
 	}
 
-	// 10. Check for Play Framework (start script in application-root or staged-app)
+	// 10. Check for Play Framework (start script at root, application-root, or staged-app)
+	if _, err := os.Stat(filepath.Join(d.BuildDir, "start")); err == nil {
+		fmt.Printf("java %s\n", d.Version)
+		return nil
+	}
 	if _, err := os.Stat(filepath.Join(d.BuildDir, "application-root", "start")); err == nil {
 		fmt.Printf("java %s\n", d.Version)
 		return nil

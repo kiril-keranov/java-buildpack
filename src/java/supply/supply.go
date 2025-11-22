@@ -36,6 +36,7 @@ func Run(s *Supplier) error {
 	registry.Register(containers.NewSpringBootContainer(ctx))
 	registry.Register(containers.NewTomcatContainer(ctx))
 	registry.Register(containers.NewGroovyContainer(ctx))
+	registry.Register(containers.NewPlayContainer(ctx))
 	registry.Register(containers.NewDistZipContainer(ctx))
 	registry.Register(containers.NewJavaMainContainer(ctx))
 
