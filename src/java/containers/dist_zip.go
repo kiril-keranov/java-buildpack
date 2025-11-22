@@ -33,6 +33,12 @@ func (d *DistZipContainer) Detect() (string, error) {
 	libStat, libErr := os.Stat(libDir)
 
 	if binErr == nil && libErr == nil && binStat.IsDir() && libStat.IsDir() {
+		// Exclude Play Framework applications
+		if d.isPlayFramework(libDir) {
+			d.context.Log.Debug("Rejecting Dist ZIP detection - Play Framework JAR found")
+			return "", nil
+		}
+
 		// Check for startup scripts in bin/
 		entries, err := os.ReadDir(binDir)
 		if err == nil && len(entries) > 0 {
@@ -55,6 +61,12 @@ func (d *DistZipContainer) Detect() (string, error) {
 	libStatApp, libErrApp := os.Stat(libDirApp)
 
 	if binErrApp == nil && libErrApp == nil && binStatApp.IsDir() && libStatApp.IsDir() {
+		// Exclude Play Framework applications
+		if d.isPlayFramework(libDirApp) {
+			d.context.Log.Debug("Rejecting Dist ZIP detection - Play Framework JAR found in application-root")
+			return "", nil
+		}
+
 		// Check for startup scripts in bin/
 		entriesApp, errApp := os.ReadDir(binDirApp)
 		if errApp == nil && len(entriesApp) > 0 {
@@ -70,6 +82,32 @@ func (d *DistZipContainer) Detect() (string, error) {
 	}
 
 	return "", nil
+}
+
+// isPlayFramework checks if a lib directory contains Play Framework JARs
+func (d *DistZipContainer) isPlayFramework(libDir string) bool {
+	entries, err := os.ReadDir(libDir)
+	if err != nil {
+		return false
+	}
+
+	// Check for Play Framework JAR patterns:
+	// - com.typesafe.play.play_*.jar (Play 2.2+)
+	// - play.play_*.jar (Play 2.0)
+	// - play_*.jar (Play 2.1)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if strings.Contains(name, "com.typesafe.play.play_") ||
+			strings.HasPrefix(name, "play.play_") ||
+			(strings.HasPrefix(name, "play_") && strings.HasSuffix(name, ".jar")) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Supply installs Dist ZIP dependencies
