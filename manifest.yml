@@ -1,0 +1,124 @@
+---
+language: java
+
+default_versions:
+- name: openjdk
+  version: 17.x
+- name: jvmkill
+  version: 1.x
+- name: memory-calculator
+  version: 4.x
+
+url_to_dependency_map:
+- match: openjdk-jre
+  name: openjdk
+  version: $1
+
+dependencies:
+# OpenJDK JRE versions
+# Version 8
+- name: openjdk
+  version: 8.0.422
+  uri: https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u422-b05/OpenJDK8U-jre_x64_linux_hotspot_8u422b05.tar.gz
+  sha256: placeholder_sha256_here
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Version 11
+- name: openjdk
+  version: 11.0.25
+  uri: https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jre_x64_linux_hotspot_11.0.25_9.tar.gz
+  sha256: placeholder_sha256_here
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Version 17
+- name: openjdk
+  version: 17.0.13
+  uri: https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%2B11/OpenJDK17U-jre_x64_linux_hotspot_17.0.13_11.tar.gz
+  sha256: 4086cc7cb2d9e7810141f255063caad10a8a018db5e6b47fa5394c506ab65bff
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Version 21
+- name: openjdk
+  version: 21.0.5
+  uri: https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jre_x64_linux_hotspot_21.0.5_11.tar.gz
+  sha256: placeholder_sha256_here
+  cf_stacks:
+  - cflinuxfs4
+
+# Tomcat versions
+- name: tomcat
+  version: 9.0.98
+  uri: https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.98/bin/apache-tomcat-9.0.98.tar.gz
+  sha256: placeholder_sha256_here
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+- name: tomcat
+  version: 10.1.33
+  uri: https://archive.apache.org/dist/tomcat/tomcat-10/v10.1.33/bin/apache-tomcat-10.1.33.tar.gz
+  sha256: placeholder_sha256_here
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# JVM Kill Agent
+- name: jvmkill
+  version: 1.16.0
+  uri: https://github.com/cloudfoundry/jvmkill/releases/download/v1.16.0.RELEASE/jvmkill-1.16.0-RELEASE.so
+  sha256: a3092627b082cb3cdbbe4b255d35687126aa604e6b613dcda33be9f7e1277162
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Memory Calculator
+- name: memory-calculator
+  version: 4.1.0
+  uri: https://github.com/cloudfoundry/java-buildpack-memory-calculator/releases/download/v4.1.0/memory-calculator-4.1.0.tgz
+  sha256: 0ba6fa26b32e4b906ab460a7cdb70ebded95ea353fdda93bd7f5792300b9cd43
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Tomcat Lifecycle Support
+- name: tomcat-lifecycle-support
+  version: 3.3.0
+  uri: https://java-buildpack.cloudfoundry.org/tomcat-lifecycle-support/tomcat-lifecycle-support-3.3.0.jar
+  sha256: placeholder_sha256_here
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Tomcat Logging Support
+- name: tomcat-logging-support
+  version: 3.3.0
+  uri: https://java-buildpack.cloudfoundry.org/tomcat-logging-support/tomcat-logging-support-3.3.0.jar
+  sha256: placeholder_sha256_here
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Tomcat Access Logging Support
+- name: tomcat-access-logging-support
+  version: 3.3.0
+  uri: https://java-buildpack.cloudfoundry.org/tomcat-access-logging-support/tomcat-access-logging-support-3.3.0.jar
+  sha256: placeholder_sha256_here
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# NOTE: This manifest.yml is a starting point. 
+# Additional dependencies need to be added for:
+# - Other JRE vendors (Zulu, GraalVM, SAP Machine, etc.)
+# - APM agents (New Relic, AppDynamics, Dynatrace, etc.)
+# - Other frameworks and agents
+# - Spring Boot, Groovy, Play Framework support libraries
+# 
+# SHA256 checksums must be calculated for all dependencies.
+# Use: curl -sL <uri> | sha256sum
