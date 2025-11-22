@@ -1,18 +1,79 @@
 ---
 language: java
 
+include_files:
+- CONTRIBUTING.md
+- LICENSE
+- NOTICE
+- README.md
+- VERSION
+- bin/compile
+- bin/detect
+- bin/finalize
+- bin/release
+- bin/supply
+- manifest.yml
+pre_package: scripts/build.sh
+
 default_versions:
 - name: openjdk
   version: 17.x
+- name: tomcat
+  version: 10.1.x
 - name: jvmkill
   version: 1.x
 - name: memory-calculator
   version: 4.x
 
 url_to_dependency_map:
-- match: openjdk-jre
+- match: openjdk-jre-(\d+\.\d+\.\d+)
   name: openjdk
   version: $1
+- match: tomcat-(\d+\.\d+\.\d+)
+  name: tomcat
+  version: $1
+- match: jvmkill-(\d+\.\d+\.\d+)
+  name: jvmkill
+  version: $1
+- match: memory-calculator-(\d+\.\d+\.\d+)
+  name: memory-calculator
+  version: $1
+- match: new-relic-(\d+\.\d+\.\d+)
+  name: new-relic
+  version: $1
+- match: app-dynamics-(\d+\.\d+\.\d+\.\d+)
+  name: app-dynamics
+  version: $1
+- match: dynatrace-(\d+\.\d+\.\d+)
+  name: dynatrace
+  version: $1
+
+dependency_deprecation_dates:
+- version_line: 8.x
+  name: openjdk
+  date: 2026-11-30
+  link: https://adoptium.net/support/
+  match: 8\.\d+\.\d+
+- version_line: 11.x
+  name: openjdk
+  date: 2027-10-31
+  link: https://adoptium.net/support/
+  match: 11\.\d+\.\d+
+- version_line: 17.x
+  name: openjdk
+  date: 2029-09-30
+  link: https://adoptium.net/support/
+  match: 17\.\d+\.\d+
+- version_line: 21.x
+  name: openjdk
+  date: 2031-09-30
+  link: https://adoptium.net/support/
+  match: 21\.\d+\.\d+
+- version_line: 23.x
+  name: openjdk
+  date: 2025-09-30
+  link: https://adoptium.net/support/
+  match: 23\.\d+\.\d+
 
 dependencies:
 # OpenJDK JRE versions
@@ -47,6 +108,14 @@ dependencies:
 - name: openjdk
   version: 21.0.5
   uri: https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jre_x64_linux_hotspot_21.0.5_11.tar.gz
+  sha256: placeholder_sha256_here
+  cf_stacks:
+  - cflinuxfs4
+
+# Version 23
+- name: openjdk
+  version: 23.0.1
+  uri: https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.1%2B11/OpenJDK23U-jre_x64_linux_hotspot_23.0.1_11.tar.gz
   sha256: placeholder_sha256_here
   cf_stacks:
   - cflinuxfs4
@@ -113,12 +182,48 @@ dependencies:
   - cflinuxfs4
   - cflinuxfs3
 
-# NOTE: This manifest.yml is a starting point. 
-# Additional dependencies need to be added for:
-# - Other JRE vendors (Zulu, GraalVM, SAP Machine, etc.)
-# - APM agents (New Relic, AppDynamics, Dynatrace, etc.)
-# - Other frameworks and agents
-# - Spring Boot, Groovy, Play Framework support libraries
+# APM Agents
+# New Relic
+- name: new-relic
+  version: 8.15.0
+  uri: https://download.newrelic.com/newrelic/java-agent/newrelic-agent/8.15.0/newrelic-java-8.15.0.zip
+  sha256: placeholder_sha256_here
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# AppDynamics
+- name: app-dynamics
+  version: 24.11.0.36457
+  uri: https://download-files.appdynamics.com/download-file/java/24.11.0.36457/AppServerAgent-24.11.0.36457.zip
+  sha256: placeholder_sha256_here
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Dynatrace OneAgent
+- name: dynatrace
+  version: 1.303.0
+  uri: https://placeholder-dynatrace-download.com/dynatrace-agent-1.303.0.jar
+  sha256: placeholder_sha256_here
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# NOTE: This manifest.yml includes core dependencies for:
+# ✅ OpenJDK JRE versions: 8, 11, 17, 21, 23
+# ✅ Tomcat versions: 9.x, 10.x
+# ✅ JVMKill agent and Memory Calculator
+# ✅ Tomcat support libraries
+# ✅ APM agents: New Relic, AppDynamics, Dynatrace
+#
+# Additional dependencies still need to be added for:
+# - Other JRE vendors (Zulu, GraalVM, SAP Machine, IBM JRE, Oracle JRE, Zing)
+# - Other APM/monitoring agents (Elastic APM, SkyWalking, Sealights, etc.)
+# - Security providers (Luna, ProtectApp, etc.)
+# - Debug frameworks (JRebel, JProfiler, YourKit)
+# - JDBC drivers (PostgreSQL, MariaDB)
+# - Spring Boot CLI, Play Framework, Ratpack support libraries
 # 
-# SHA256 checksums must be calculated for all dependencies.
-# Use: curl -sL <uri> | sha256sum
+# TODO: Calculate SHA256 checksums for all placeholder dependencies.
+# Command: curl -sL <uri> | sha256sum

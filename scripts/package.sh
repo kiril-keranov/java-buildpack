@@ -1,70 +1,113 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
-cd "$( dirname "${BASH_SOURCE[0]}" )/.."
-source ./scripts/install_tools.sh
+set -e
+set -u
+set -o pipefail
 
-ROOTDIR="$(pwd)"
-BUILDPACK_DIR="${ROOTDIR}"
+ROOTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly ROOTDIR
 
-# Parse arguments
-CACHED=false
-STACK="cflinuxfs4"
+# shellcheck source=SCRIPTDIR/.util/tools.sh
+source "${ROOTDIR}/scripts/.util/tools.sh"
 
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --cached)
-            CACHED=true
-            shift
-            ;;
-        --stack)
-            STACK="$2"
-            shift 2
-            ;;
-        *)
-            echo "Unknown option: $1"
-            exit 1
-            ;;
+# shellcheck source=SCRIPTDIR/.util/print.sh
+source "${ROOTDIR}/scripts/.util/print.sh"
+
+function main() {
+  local stack version cached output
+  stack="cflinuxfs4"
+  cached="false"
+  output="${ROOTDIR}/build/buildpack.zip"
+
+  while [[ "${#}" != 0 ]]; do
+    case "${1}" in
+      --stack)
+        stack="${2}"
+        shift 2
+        ;;
+
+      --version)
+        version="${2}"
+        shift 2
+        ;;
+
+      --cached)
+        cached="true"
+        shift 1
+        ;;
+
+      --output)
+        output="${2}"
+        shift 2
+        ;;
+
+      --help|-h)
+        shift 1
+        usage
+        exit 0
+        ;;
+
+      "")
+        # skip if the argument is empty
+        shift 1
+        ;;
+
+      *)
+        util::print::error "unknown argument \"${1}\""
     esac
-done
+  done
 
-VERSION=$(cat "${ROOTDIR}/VERSION" 2>/dev/null || echo "0.0.0")
-OUTPUT_FILE="${ROOTDIR}/java_buildpack-${STACK}-v${VERSION}.zip"
+  if [[ -z "${version:-}" ]]; then
+    version=$(cat "${ROOTDIR}/VERSION" 2>/dev/null || echo "0.0.0")
+    echo "No version specified, using VERSION file: ${version}"
+  fi
 
-if [[ "${CACHED}" == "true" ]]; then
-    OUTPUT_FILE="${ROOTDIR}/java_buildpack-cached-${STACK}-v${VERSION}.zip"
-fi
+  package::buildpack "${version}" "${cached}" "${stack}" "${output}"
+}
 
-echo "-----> Building buildpack"
-./scripts/build.sh
 
-# Create temporary directory for packaging
-TMP_DIR=$(mktemp -d)
-trap "rm -rf ${TMP_DIR}" EXIT
+function usage() {
+  cat <<-USAGE
+package.sh --version <version> [OPTIONS]
+Packages the buildpack into a .zip file.
+OPTIONS
+  --help               -h            prints the command usage
+  --version <version>  -v <version>  specifies the version number to use when packaging the buildpack
+  --cached                           cache the buildpack dependencies (default: false)
+  --stack  <stack>                   specifies the stack (default: cflinuxfs4)
+  --output <file>                    output file path (default: build/buildpack.zip)
+USAGE
+}
 
-echo "-----> Packaging buildpack to ${OUTPUT_FILE}"
+function package::buildpack() {
+  local version cached stack output
+  version="${1}"
+  cached="${2}"
+  stack="${3}"
+  output="${4}"
 
-# Copy buildpack files
-cp -r "${BUILDPACK_DIR}/bin" "${TMP_DIR}/"
-cp -r "${BUILDPACK_DIR}/config" "${TMP_DIR}/"
-cp -r "${BUILDPACK_DIR}/defaults" "${TMP_DIR}/"
-cp -r "${BUILDPACK_DIR}/resources" "${TMP_DIR}/"
-cp "${BUILDPACK_DIR}/manifest.yml" "${TMP_DIR}/"
-cp "${BUILDPACK_DIR}/VERSION" "${TMP_DIR}/"
+  mkdir -p "$(dirname "${output}")"
 
-# If cached, download dependencies
-if [[ "${CACHED}" == "true" ]]; then
-    echo "-----> Downloading dependencies for offline buildpack"
-    mkdir -p "${TMP_DIR}/dependencies"
-    
-    # Parse manifest.yml and download dependencies
-    # This would use a tool to download all dependencies listed in manifest.yml
-    # For now, this is a placeholder
-    echo "       (Dependency download not yet implemented)"
-fi
+  util::tools::buildpack-packager::install --directory "${ROOTDIR}/.bin"
 
-# Create zip file
-cd "${TMP_DIR}"
-zip -r "${OUTPUT_FILE}" .
+  echo "Building buildpack (version: ${version}, stack: ${stack}, cached: ${cached}, output: ${output})"
 
-echo "-----> Buildpack packaged successfully: ${OUTPUT_FILE}"
+  local stack_flag
+  stack_flag="--any-stack"
+  if [[ "${stack}" != "any" ]]; then
+    stack_flag="--stack=${stack}"
+  fi
+
+  local file
+  file="$(
+    "${ROOTDIR}/.bin/buildpack-packager" build \
+      "--version=${version}" \
+      "--cached=${cached}" \
+      "${stack_flag}" \
+    | xargs -n1 | grep -e '\.zip$'
+  )"
+
+  mv "${file}" "${output}"
+}
+
+main "${@:-}"
