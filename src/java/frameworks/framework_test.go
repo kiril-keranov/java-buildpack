@@ -2,6 +2,7 @@ package frameworks_test
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/cloudfoundry/java-buildpack/src/java/frameworks"
@@ -541,3 +542,306 @@ func TestVCAPServicesEmptyCredentials(t *testing.T) {
 // - Framework registry error handling tests
 // - Credential validation tests (without actual installation)
 // ==============================================================================
+
+// TestJavaOptsFrameworkDetect tests Java Opts framework detection
+func TestJavaOptsFrameworkDetect(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "java-buildpack-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	logger := libbuildpack.NewLogger(os.Stdout)
+	manifest := &libbuildpack.Manifest{}
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, logger, manifest)
+
+	ctx := &frameworks.Context{
+		Stager:   stager,
+		Manifest: manifest,
+		Log:      logger,
+	}
+
+	framework := frameworks.NewJavaOptsFramework(ctx)
+
+	// Test with no configuration (from_environment: true by default)
+	os.Unsetenv("JBP_CONFIG_JAVA_OPTS")
+	name, err := framework.Detect()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if name != "Java Opts" {
+		t.Errorf("Expected 'Java Opts' (from_environment: true by default), got: %s", name)
+	}
+
+	// Test with JBP_CONFIG_JAVA_OPTS environment variable
+	os.Setenv("JBP_CONFIG_JAVA_OPTS", "{java_opts: [\"-Xmx512m\"]}")
+	defer os.Unsetenv("JBP_CONFIG_JAVA_OPTS")
+
+	name, err = framework.Detect()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if name != "Java Opts" {
+		t.Errorf("Expected 'Java Opts', got: %s", name)
+	}
+}
+
+// TestJavaOptsFrameworkSupply tests Java Opts framework supply (should be no-op)
+func TestJavaOptsFrameworkSupply(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "java-buildpack-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	logger := libbuildpack.NewLogger(os.Stdout)
+	manifest := &libbuildpack.Manifest{}
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, logger, manifest)
+
+	ctx := &frameworks.Context{
+		Stager:   stager,
+		Manifest: manifest,
+		Log:      logger,
+	}
+
+	framework := frameworks.NewJavaOptsFramework(ctx)
+
+	// Supply should be a no-op (no error)
+	err = framework.Supply()
+	if err != nil {
+		t.Errorf("Expected no error from Supply(), got: %v", err)
+	}
+}
+
+// TestJavaOptsConfigParsing tests parsing of java_opts configuration
+func TestJavaOptsConfigParsing(t *testing.T) {
+	// Test with custom java_opts
+	os.Setenv("JBP_CONFIG_JAVA_OPTS", "{java_opts: [\"-Xmx512m\", \"-XX:+UseG1GC\"]}")
+	defer os.Unsetenv("JBP_CONFIG_JAVA_OPTS")
+
+	tmpDir, err := os.MkdirTemp("", "java-buildpack-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	logger := libbuildpack.NewLogger(os.Stdout)
+	manifest := &libbuildpack.Manifest{}
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, logger, manifest)
+
+	ctx := &frameworks.Context{
+		Stager:   stager,
+		Manifest: manifest,
+		Log:      logger,
+	}
+
+	framework := frameworks.NewJavaOptsFramework(ctx)
+
+	// Should detect with custom opts
+	name, err := framework.Detect()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if name != "Java Opts" {
+		t.Errorf("Expected 'Java Opts', got: %s", name)
+	}
+}
+
+// TestJavaOptsFromEnvironmentDisabled tests behavior when from_environment is false
+func TestJavaOptsFromEnvironmentDisabled(t *testing.T) {
+	// Disable from_environment
+	os.Setenv("JBP_CONFIG_JAVA_OPTS", "{from_environment: false}")
+	defer os.Unsetenv("JBP_CONFIG_JAVA_OPTS")
+
+	tmpDir, err := os.MkdirTemp("", "java-buildpack-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	logger := libbuildpack.NewLogger(os.Stdout)
+	manifest := &libbuildpack.Manifest{}
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, logger, manifest)
+
+	ctx := &frameworks.Context{
+		Stager:   stager,
+		Manifest: manifest,
+		Log:      logger,
+	}
+
+	framework := frameworks.NewJavaOptsFramework(ctx)
+
+	// Should not detect when from_environment is false and no custom opts
+	name, err := framework.Detect()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if name != "" {
+		t.Errorf("Expected no detection when from_environment is false, got: %s", name)
+	}
+}
+
+// TestSpringAutoReconfigurationDetect tests Spring Auto-reconfiguration detection
+func TestSpringAutoReconfigurationDetect(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "java-buildpack-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create BOOT-INF/lib directory structure
+	bootInfLib := filepath.Join(tmpDir, "BOOT-INF", "lib")
+	if err := os.MkdirAll(bootInfLib, 0755); err != nil {
+		t.Fatalf("Failed to create BOOT-INF/lib: %v", err)
+	}
+
+	// Create spring-core JAR
+	springCoreJar := filepath.Join(bootInfLib, "spring-core-5.3.29.jar")
+	if err := os.WriteFile(springCoreJar, []byte("fake jar"), 0644); err != nil {
+		t.Fatalf("Failed to create spring-core JAR: %v", err)
+	}
+
+	logger := libbuildpack.NewLogger(os.Stdout)
+	manifest := &libbuildpack.Manifest{}
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, logger, manifest)
+
+	ctx := &frameworks.Context{
+		Stager:   stager,
+		Manifest: manifest,
+		Log:      logger,
+	}
+
+	framework := frameworks.NewSpringAutoReconfigurationFramework(ctx)
+
+	// Should detect Spring application
+	name, err := framework.Detect()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if name != "Spring Auto-reconfiguration" {
+		t.Errorf("Expected 'Spring Auto-reconfiguration', got: %s", name)
+	}
+}
+
+// TestSpringAutoReconfigurationNoSpring tests no detection without Spring
+func TestSpringAutoReconfigurationNoSpring(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "java-buildpack-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	logger := libbuildpack.NewLogger(os.Stdout)
+	manifest := &libbuildpack.Manifest{}
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, logger, manifest)
+
+	ctx := &frameworks.Context{
+		Stager:   stager,
+		Manifest: manifest,
+		Log:      logger,
+	}
+
+	framework := frameworks.NewSpringAutoReconfigurationFramework(ctx)
+
+	// Should not detect without Spring
+	name, err := framework.Detect()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if name != "" {
+		t.Errorf("Expected no detection without Spring, got: %s", name)
+	}
+}
+
+// TestSpringAutoReconfigurationSkipWithJavaCfEnv tests skipping when java-cfenv is present
+func TestSpringAutoReconfigurationSkipWithJavaCfEnv(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "java-buildpack-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create BOOT-INF/lib directory structure
+	bootInfLib := filepath.Join(tmpDir, "BOOT-INF", "lib")
+	if err := os.MkdirAll(bootInfLib, 0755); err != nil {
+		t.Fatalf("Failed to create BOOT-INF/lib: %v", err)
+	}
+
+	// Create both spring-core and java-cfenv JARs
+	springCoreJar := filepath.Join(bootInfLib, "spring-core-5.3.29.jar")
+	if err := os.WriteFile(springCoreJar, []byte("fake jar"), 0644); err != nil {
+		t.Fatalf("Failed to create spring-core JAR: %v", err)
+	}
+
+	javaCfEnvJar := filepath.Join(bootInfLib, "java-cfenv-boot-3.1.5.jar")
+	if err := os.WriteFile(javaCfEnvJar, []byte("fake jar"), 0644); err != nil {
+		t.Fatalf("Failed to create java-cfenv JAR: %v", err)
+	}
+
+	logger := libbuildpack.NewLogger(os.Stdout)
+	manifest := &libbuildpack.Manifest{}
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, logger, manifest)
+
+	ctx := &frameworks.Context{
+		Stager:   stager,
+		Manifest: manifest,
+		Log:      logger,
+	}
+
+	framework := frameworks.NewSpringAutoReconfigurationFramework(ctx)
+
+	// Should NOT detect when java-cfenv is present
+	name, err := framework.Detect()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if name != "" {
+		t.Errorf("Expected no detection with java-cfenv present, got: %s", name)
+	}
+}
+
+// TestSpringAutoReconfigurationDisabled tests disabled via environment variable
+func TestSpringAutoReconfigurationDisabled(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "java-buildpack-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create BOOT-INF/lib directory structure
+	bootInfLib := filepath.Join(tmpDir, "BOOT-INF", "lib")
+	if err := os.MkdirAll(bootInfLib, 0755); err != nil {
+		t.Fatalf("Failed to create BOOT-INF/lib: %v", err)
+	}
+
+	// Create spring-core JAR
+	springCoreJar := filepath.Join(bootInfLib, "spring-core-5.3.29.jar")
+	if err := os.WriteFile(springCoreJar, []byte("fake jar"), 0644); err != nil {
+		t.Fatalf("Failed to create spring-core JAR: %v", err)
+	}
+
+	// Disable Spring Auto-reconfiguration
+	os.Setenv("JBP_CONFIG_SPRING_AUTO_RECONFIGURATION", "{enabled: false}")
+	defer os.Unsetenv("JBP_CONFIG_SPRING_AUTO_RECONFIGURATION")
+
+	logger := libbuildpack.NewLogger(os.Stdout)
+	manifest := &libbuildpack.Manifest{}
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, logger, manifest)
+
+	ctx := &frameworks.Context{
+		Stager:   stager,
+		Manifest: manifest,
+		Log:      logger,
+	}
+
+	framework := frameworks.NewSpringAutoReconfigurationFramework(ctx)
+
+	// Should NOT detect when explicitly disabled
+	name, err := framework.Detect()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if name != "" {
+		t.Errorf("Expected no detection when disabled, got: %s", name)
+	}
+}

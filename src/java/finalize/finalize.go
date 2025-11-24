@@ -146,9 +146,36 @@ func (f *Finalizer) finalizeFrameworks() error {
 
 	// Create and populate framework registry
 	registry := frameworks.NewRegistry(ctx)
+
+	// APM Agents (Priority 1)
 	registry.Register(frameworks.NewNewRelicFramework(ctx))
 	registry.Register(frameworks.NewAppDynamicsFramework(ctx))
 	registry.Register(frameworks.NewDynatraceFramework(ctx))
+	registry.Register(frameworks.NewDatadogJavaagentFramework(ctx))
+	registry.Register(frameworks.NewElasticApmAgentFramework(ctx))
+
+	// Spring Service Bindings (Priority 1)
+	registry.Register(frameworks.NewSpringAutoReconfigurationFramework(ctx))
+	registry.Register(frameworks.NewJavaCfEnvFramework(ctx))
+
+	// JDBC Drivers (Priority 1)
+	registry.Register(frameworks.NewPostgresqlJdbcFramework(ctx))
+	registry.Register(frameworks.NewMariaDBJDBCFramework(ctx))
+
+	// Development Tools (Priority 1)
+	registry.Register(frameworks.NewDebugFramework(ctx))
+	registry.Register(frameworks.NewJmxFramework(ctx))
+	registry.Register(frameworks.NewJavaOptsFramework(ctx))
+
+	// APM Agents (Priority 2)
+	registry.Register(frameworks.NewAzureApplicationInsightsAgentFramework(ctx))
+	registry.Register(frameworks.NewCheckmarxIASTAgentFramework(ctx))
+	registry.Register(frameworks.NewGoogleStackdriverDebuggerFramework(ctx))
+	registry.Register(frameworks.NewGoogleStackdriverProfilerFramework(ctx))
+	registry.Register(frameworks.NewIntroscopeAgentFramework(ctx))
+	registry.Register(frameworks.NewRiverbedAppInternalsAgentFramework(ctx))
+	registry.Register(frameworks.NewSkyWalkingAgentFramework(ctx))
+	registry.Register(frameworks.NewSplunkOtelJavaAgentFramework(ctx))
 
 	// Detect all frameworks that were installed
 	detectedFrameworks, frameworkNames, err := registry.DetectAll()

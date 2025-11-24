@@ -163,15 +163,18 @@ func (s *SpringAutoReconfigurationFramework) hasSpring() bool {
 
 // hasJavaCfEnv checks if java-cfenv is present in the application
 func (s *SpringAutoReconfigurationFramework) hasJavaCfEnv() bool {
-	// Look for java-cfenv*.jar in the application
-	pattern := filepath.Join(s.context.Stager.BuildDir(), "**", "java-cfenv*.jar")
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return false
+	// Check common locations for java-cfenv*.jar
+	commonPaths := []string{
+		filepath.Join(s.context.Stager.BuildDir(), "WEB-INF", "lib", "java-cfenv*.jar"),
+		filepath.Join(s.context.Stager.BuildDir(), "lib", "java-cfenv*.jar"),
+		filepath.Join(s.context.Stager.BuildDir(), "BOOT-INF", "lib", "java-cfenv*.jar"),
 	}
 
-	if len(matches) > 0 {
-		return true
+	for _, path := range commonPaths {
+		matches, _ := filepath.Glob(path)
+		if len(matches) > 0 {
+			return true
+		}
 	}
 
 	// Also check if java_cf_env framework is being installed
