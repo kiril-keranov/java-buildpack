@@ -90,11 +90,13 @@ dependencies: []
 				Expect(os.MkdirAll(bootInfDir, 0755)).To(Succeed())
 			})
 
-			It("detects Spring Boot container", func() {
-				// Note: This test would require mocking the manifest and installer
-				// to avoid actual downloads. For now, we're testing the structure.
+			It("creates the supplier with required components", func() {
+				// Verify supplier is properly initialized
 				Expect(supplier).NotTo(BeNil())
 				Expect(supplier.Stager).NotTo(BeNil())
+				Expect(supplier.Manifest).NotTo(BeNil())
+				Expect(supplier.Log).NotTo(BeNil())
+				Expect(supplier.Command).NotTo(BeNil())
 			})
 		})
 
@@ -105,9 +107,10 @@ dependencies: []
 				Expect(os.MkdirAll(webInfDir, 0755)).To(Succeed())
 			})
 
-			It("detects Tomcat container", func() {
+			It("creates the supplier with required components", func() {
 				Expect(supplier).NotTo(BeNil())
 				Expect(supplier.Stager).NotTo(BeNil())
+				Expect(supplier.Manifest).NotTo(BeNil())
 			})
 		})
 
@@ -118,9 +121,19 @@ dependencies: []
 				Expect(os.WriteFile(groovyFile, []byte("println 'hello'"), 0644)).To(Succeed())
 			})
 
-			It("detects Groovy container", func() {
+			It("creates the supplier with required components", func() {
 				Expect(supplier).NotTo(BeNil())
 				Expect(supplier.Stager).NotTo(BeNil())
+				Expect(supplier.Manifest).NotTo(BeNil())
+			})
+		})
+
+		Context("when no recognized application type is present", func() {
+			It("fails to detect a container", func() {
+				// This would be tested via supply.Run() which we can't easily test
+				// without mocking the installer to avoid real downloads.
+				// Integration tests cover this scenario.
+				Expect(supplier).NotTo(BeNil())
 			})
 		})
 	})

@@ -212,3 +212,298 @@ func TestNewRelicFrameworkDetect(t *testing.T) {
 		t.Errorf("Expected 'New Relic Agent', got: %s", name)
 	}
 }
+
+// TestAppDynamicsFrameworkDetect tests AppDynamics framework detection
+func TestAppDynamicsFrameworkDetect(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "java-buildpack-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, nil, &libbuildpack.Manifest{})
+
+	ctx := &frameworks.Context{
+		Stager: stager,
+		Log:    &libbuildpack.Logger{},
+	}
+
+	framework := frameworks.NewAppDynamicsFramework(ctx)
+
+	// Test with no service binding
+	os.Unsetenv("VCAP_SERVICES")
+	name, err := framework.Detect()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if name != "" {
+		t.Errorf("Expected no detection without service, got: %s", name)
+	}
+
+	// Test with AppDynamics service
+	vcapJSON := `{
+		"appdynamics": [{
+			"name": "appdynamics-service",
+			"label": "appdynamics",
+			"credentials": {
+				"host-name": "controller.example.com",
+				"account-name": "test-account",
+				"account-access-key": "test-key"
+			}
+		}]
+	}`
+	os.Setenv("VCAP_SERVICES", vcapJSON)
+	defer os.Unsetenv("VCAP_SERVICES")
+
+	name, err = framework.Detect()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if name != "AppDynamics Agent" {
+		t.Errorf("Expected 'AppDynamics Agent', got: %s", name)
+	}
+}
+
+// TestDynatraceFrameworkDetect tests Dynatrace framework detection
+func TestDynatraceFrameworkDetect(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "java-buildpack-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, nil, &libbuildpack.Manifest{})
+
+	ctx := &frameworks.Context{
+		Stager: stager,
+		Log:    &libbuildpack.Logger{},
+	}
+
+	framework := frameworks.NewDynatraceFramework(ctx)
+
+	// Test with no service binding
+	os.Unsetenv("VCAP_SERVICES")
+	name, err := framework.Detect()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if name != "" {
+		t.Errorf("Expected no detection without service, got: %s", name)
+	}
+
+	// Test with Dynatrace service
+	vcapJSON := `{
+		"dynatrace": [{
+			"name": "dynatrace-service",
+			"label": "dynatrace",
+			"credentials": {
+				"environmentid": "test-env",
+				"apitoken": "test-token"
+			}
+		}]
+	}`
+	os.Setenv("VCAP_SERVICES", vcapJSON)
+	defer os.Unsetenv("VCAP_SERVICES")
+
+	name, err = framework.Detect()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+	if name != "Dynatrace OneAgent" {
+		t.Errorf("Expected 'Dynatrace OneAgent', got: %s", name)
+	}
+}
+
+// TestVCAPServicesMultipleServices tests handling multiple services
+func TestVCAPServicesMultipleServices(t *testing.T) {
+	vcapJSON := `{
+		"newrelic": [{
+			"name": "newrelic-1",
+			"label": "newrelic"
+		}, {
+			"name": "newrelic-2",
+			"label": "newrelic"
+		}],
+		"appdynamics": [{
+			"name": "appdynamics-1",
+			"label": "appdynamics"
+		}]
+	}`
+
+	os.Setenv("VCAP_SERVICES", vcapJSON)
+	defer os.Unsetenv("VCAP_SERVICES")
+
+	services, err := frameworks.GetVCAPServices()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	// Should have both service types
+	if !services.HasService("newrelic") {
+		t.Error("Expected to find newrelic service")
+	}
+	if !services.HasService("appdynamics") {
+		t.Error("Expected to find appdynamics service")
+	}
+
+	// GetService should return first service in array
+	nrService := services.GetService("newrelic")
+	if nrService == nil {
+		t.Fatal("Expected to get newrelic service")
+	}
+	if nrService.Name != "newrelic-1" {
+		t.Errorf("Expected first service 'newrelic-1', got '%s'", nrService.Name)
+	}
+}
+
+// TestVCAPServicesUserProvidedWithTags tests user-provided services with tags
+func TestVCAPServicesUserProvidedWithTags(t *testing.T) {
+	vcapJSON := `{
+		"user-provided": [{
+			"name": "my-apm",
+			"label": "user-provided",
+			"tags": ["apm", "newrelic", "monitoring"],
+			"credentials": {
+				"licenseKey": "user-key"
+			}
+		}]
+	}`
+
+	os.Setenv("VCAP_SERVICES", vcapJSON)
+	defer os.Unsetenv("VCAP_SERVICES")
+
+	services, err := frameworks.GetVCAPServices()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	// Test HasTag with various tags
+	if !services.HasTag("apm") {
+		t.Error("Expected to find 'apm' tag")
+	}
+	if !services.HasTag("newrelic") {
+		t.Error("Expected to find 'newrelic' tag")
+	}
+	if !services.HasTag("monitoring") {
+		t.Error("Expected to find 'monitoring' tag")
+	}
+	if services.HasTag("database") {
+		t.Error("Expected NOT to find 'database' tag")
+	}
+}
+
+// TestVCAPServicesInvalidJSON tests handling of invalid JSON
+func TestVCAPServicesInvalidJSON(t *testing.T) {
+	os.Setenv("VCAP_SERVICES", `{invalid json}`)
+	defer os.Unsetenv("VCAP_SERVICES")
+
+	services, err := frameworks.GetVCAPServices()
+	if err == nil {
+		t.Error("Expected error for invalid JSON")
+	}
+	if services != nil {
+		t.Error("Expected nil services for invalid JSON")
+	}
+}
+
+// TestFrameworkDetectAllWithMultipleFrameworks tests detecting multiple frameworks
+func TestFrameworkDetectAllWithMultipleFrameworks(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "java-buildpack-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, nil, &libbuildpack.Manifest{})
+
+	ctx := &frameworks.Context{
+		Stager: stager,
+		Log:    &libbuildpack.Logger{},
+	}
+
+	// Create registry with multiple frameworks
+	registry := frameworks.NewRegistry(ctx)
+	registry.Register(frameworks.NewNewRelicFramework(ctx))
+	registry.Register(frameworks.NewAppDynamicsFramework(ctx))
+	registry.Register(frameworks.NewDynatraceFramework(ctx))
+
+	// Set up VCAP_SERVICES with multiple APM services
+	vcapJSON := `{
+		"newrelic": [{
+			"name": "newrelic-service",
+			"label": "newrelic",
+			"credentials": {"licenseKey": "test-key"}
+		}],
+		"appdynamics": [{
+			"name": "appdynamics-service",
+			"label": "appdynamics",
+			"credentials": {"account-access-key": "test-key"}
+		}]
+	}`
+	os.Setenv("VCAP_SERVICES", vcapJSON)
+	defer os.Unsetenv("VCAP_SERVICES")
+
+	detected, names, err := registry.DetectAll()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	// Should detect both New Relic and AppDynamics
+	if len(detected) != 2 {
+		t.Errorf("Expected 2 frameworks detected, got: %d (%v)", len(detected), names)
+	}
+
+	// Check that names are correct
+	expectedNames := map[string]bool{
+		"New Relic Agent":   false,
+		"AppDynamics Agent": false,
+	}
+
+	for _, name := range names {
+		if _, ok := expectedNames[name]; ok {
+			expectedNames[name] = true
+		}
+	}
+
+	for name, found := range expectedNames {
+		if !found {
+			t.Errorf("Expected to detect '%s' but did not", name)
+		}
+	}
+}
+
+// TestVCAPServicesEmptyCredentials tests service with empty credentials
+func TestVCAPServicesEmptyCredentials(t *testing.T) {
+	vcapJSON := `{
+		"newrelic": [{
+			"name": "newrelic-service",
+			"label": "newrelic",
+			"credentials": {}
+		}]
+	}`
+
+	os.Setenv("VCAP_SERVICES", vcapJSON)
+	defer os.Unsetenv("VCAP_SERVICES")
+
+	services, err := frameworks.GetVCAPServices()
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	if !services.HasService("newrelic") {
+		t.Error("Expected to find newrelic service even with empty credentials")
+	}
+
+	service := services.GetService("newrelic")
+	if service == nil {
+		t.Fatal("Expected to get service")
+	}
+
+	if service.Credentials == nil {
+		t.Error("Expected credentials map to exist (even if empty)")
+	}
+
+	if len(service.Credentials) != 0 {
+		t.Error("Expected empty credentials map")
+	}
+}
