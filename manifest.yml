@@ -42,6 +42,14 @@ default_versions:
   version: 1.x
 - name: elastic-apm-agent
   version: 1.x
+- name: azure-application-insights
+  version: 3.x
+- name: skywalking-agent
+  version: 9.x
+- name: splunk-otel-javaagent
+  version: 2.x
+- name: google-stackdriver-profiler
+  version: 0.x
 
 url_to_dependency_map:
 - match: openjdk-jre-(\d+\.\d+\.\d+)
@@ -88,6 +96,18 @@ url_to_dependency_map:
   version: $1
 - match: elastic-apm-agent-(\d+\.\d+\.\d+)
   name: elastic-apm-agent
+  version: $1
+- match: applicationinsights-agent-(\d+\.\d+\.\d+)
+  name: azure-application-insights
+  version: $1
+- match: apache-skywalking-java-agent-(\d+\.\d+\.\d+)
+  name: skywalking-agent
+  version: $1
+- match: splunk-otel-javaagent-(\d+\.\d+\.\d+)
+  name: splunk-otel-javaagent
+  version: $1
+- match: profiler_java_agent-(\d+\.\d+\.\d+)
+  name: google-stackdriver-profiler
   version: $1
 
 dependency_deprecation_dates:
@@ -334,6 +354,42 @@ dependencies:
   - cflinuxfs4
   - cflinuxfs3
 
+# Azure Application Insights Agent
+- name: azure-application-insights
+  version: 3.6.2
+  uri: https://github.com/microsoft/ApplicationInsights-Java/releases/download/3.6.2/applicationinsights-agent-3.6.2.jar
+  sha256: e81ef99fd30444f6f1da70cd31db5e47f8e6906acbbc9199cac3b390dc6cfedf
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# SkyWalking Agent
+- name: skywalking-agent
+  version: 9.4.0
+  uri: https://archive.apache.org/dist/skywalking/java-agent/9.4.0/apache-skywalking-java-agent-9.4.0.tgz
+  sha256: 251729e400abe7eb75d83de543e355e6f5e62ecb361be67431aaece9107c15cc
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Splunk OpenTelemetry Java Agent
+- name: splunk-otel-javaagent
+  version: 2.12.0
+  uri: https://github.com/signalfx/splunk-otel-java/releases/download/v2.12.0/splunk-otel-javaagent-2.12.0.jar
+  sha256: 0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Google Stackdriver Profiler
+- name: google-stackdriver-profiler
+  version: 0.4.0
+  uri: https://storage.googleapis.com/cloud-profiler/java/latest/profiler_java_agent.tar.gz
+  sha256: 509b87c406b59424cb101d561567cadad97d3fd1c235224bca2a114d4a7bde0c
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
 # Spring Auto-reconfiguration
 - name: auto-reconfiguration
   version: 2.12.0
@@ -372,21 +428,29 @@ dependencies:
 
 # NOTE: This manifest.yml includes core dependencies for:
 # ✅ OpenJDK JRE versions: 8, 11, 17, 21, 23
+# ✅ Alternative JRE vendors: Zulu (8, 11, 17), SAP Machine (11, 17)
 # ✅ Tomcat versions: 9.x, 10.x
 # ✅ Groovy 4.x
 # ✅ JVMKill agent and Memory Calculator
 # ✅ Tomcat support libraries (commented out - unavailable)
-# ✅ APM agents: New Relic, Datadog, Elastic APM (AppDynamics, Dynatrace require auth)
+# ✅ APM agents: New Relic, Datadog, Elastic APM, Azure App Insights, SkyWalking, Splunk OTEL
+# ✅ Cloud profilers: Google Stackdriver Profiler
 # ✅ Spring service bindings: Auto-reconfiguration, Java CF Env
 # ✅ JDBC drivers: PostgreSQL, MariaDB
 # ⚠️  Debug and JMX frameworks (no external dependencies - use app-provided tools)
 #
+# ⚠️  Restricted/Unavailable Dependencies:
+# - AppDynamics: Requires authentication (see commented section above)
+# - Dynatrace: Requires environment-specific URLs (see commented section above)
+# - Introscope Agent (CA APM): Requires Broadcom/CA license and customer portal access
+# - Riverbed AppInternals: Requires Aternity license and customer portal access
+# - Google Stackdriver Debugger: DEPRECATED by Google (use Cloud Logging/Error Reporting instead)
+# - GraalVM: Requires user-provided repository via JBP_CONFIG_GRAAL_VM_JRE
+#
+# ⚠️  Checkmarx IAST Agent: Downloads dynamically from service binding URL (no manifest entry needed)
+#
 # Additional dependencies still need to be added for:
-# - Other JRE vendors (Zulu, GraalVM, SAP Machine, IBM JRE, Oracle JRE, Zing)
-# - Other APM/monitoring agents (Azure App Insights, SkyWalking, Sealights, Introscope, etc.)
+# - Other JRE vendors (IBM JRE, Oracle JRE, Zing)
 # - Security providers (Luna, ProtectApp, etc.)
 # - Debug frameworks (JRebel, JProfiler, YourKit)
 # - Spring Boot CLI, Play Framework, Ratpack support libraries
-# 
-# TODO: Calculate SHA256 checksums for all placeholder dependencies.
-# Command: curl -sL <uri> | sha256sum
