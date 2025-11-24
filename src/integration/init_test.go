@@ -81,6 +81,9 @@ func TestIntegration(t *testing.T) {
 	suite("DistZip", testDistZip(platform, fixtures))
 	suite("SpringBootCLI", testSpringBootCLI(platform, fixtures))
 
+	// Framework tests (APM agents, security providers, etc.)
+	suite("Frameworks", testFrameworks(platform, fixtures))
+
 	// Offline/Cache tests
 	if settings.Cached {
 		suite("Offline", testOffline(platform, fixtures))

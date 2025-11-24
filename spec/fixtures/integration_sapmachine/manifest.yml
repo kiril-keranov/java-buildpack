@@ -1,0 +1,7 @@
+---
+applications:
+- name: test-sapmachine-jre
+  memory: 1G
+  env:
+    JBP_CONFIG_COMPONENTS: '{"jres": ["JavaBuildpack::Jre::SapMachineJRE"]}'
+    BP_JAVA_VERSION: "17"

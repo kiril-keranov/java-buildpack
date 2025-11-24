@@ -1,0 +1,211 @@
+package jres
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/cloudfoundry/libbuildpack"
+)
+
+// ZuluJRE implements the JRE interface for Azul Zulu OpenJDK
+type ZuluJRE struct {
+	ctx              *Context
+	jreDir           string
+	version          string
+	javaHome         string
+	memoryCalc       *MemoryCalculator
+	jvmkill          *JVMKillAgent
+	installedVersion string
+}
+
+// NewZuluJRE creates a new Zulu JRE provider
+func NewZuluJRE(ctx *Context) *ZuluJRE {
+	jreDir := filepath.Join(ctx.Stager.DepDir(), "jre")
+
+	return &ZuluJRE{
+		ctx:    ctx,
+		jreDir: jreDir,
+	}
+}
+
+// Name returns the name of this JRE provider
+func (z *ZuluJRE) Name() string {
+	return "Zulu"
+}
+
+// Detect returns true if Zulu JRE should be used
+// Zulu is selected via JBP_CONFIG_COMPONENTS environment variable
+func (z *ZuluJRE) Detect() (bool, error) {
+	// Check if explicitly configured via environment
+	// Format: JBP_CONFIG_COMPONENTS='{jres: ["JavaBuildpack::Jre::ZuluJRE"]}'
+	configuredJRE := os.Getenv("JBP_CONFIG_COMPONENTS")
+	if configuredJRE != "" && (containsString(configuredJRE, "ZuluJRE") || containsString(configuredJRE, "Zulu")) {
+		return true, nil
+	}
+
+	// Also check legacy config
+	if DetectJREByEnv("zulu_jre") {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// Supply installs the Zulu JRE and its components
+func (z *ZuluJRE) Supply() error {
+	z.ctx.Log.BeginStep("Installing Zulu JRE")
+
+	// Determine version
+	dep, err := GetJREVersion(z.ctx, "zulu")
+	if err != nil {
+		z.ctx.Log.Warning("Unable to determine Zulu version from manifest, using default")
+		// Fallback to hardcoded version
+		dep = libbuildpack.Dependency{
+			Name:    "zulu",
+			Version: "11.0.25",
+		}
+	}
+
+	z.version = dep.Version
+	z.ctx.Log.Info("Installing Zulu %s", z.version)
+
+	// Install JRE
+	if err := z.ctx.Installer.InstallDependency(dep, z.jreDir); err != nil {
+		return fmt.Errorf("failed to install Zulu: %w", err)
+	}
+
+	// Find the actual JAVA_HOME (handle nested directories from tar extraction)
+	javaHome, err := z.findJavaHome()
+	if err != nil {
+		return fmt.Errorf("failed to find JAVA_HOME: %w", err)
+	}
+	z.javaHome = javaHome
+	z.installedVersion = z.version
+
+	// Set up JAVA_HOME environment
+	if err := SetupJavaHome(z.ctx, z.jreDir); err != nil {
+		return fmt.Errorf("failed to set up JAVA_HOME: %w", err)
+	}
+
+	// Determine Java major version
+	javaMajorVersion, err := DetermineJavaVersion(javaHome)
+	if err != nil {
+		z.ctx.Log.Warning("Could not determine Java version: %s", err.Error())
+		javaMajorVersion = 11 // default for Zulu
+	}
+	z.ctx.Log.Info("Detected Java major version: %d", javaMajorVersion)
+
+	// Install JVMKill agent
+	z.jvmkill = NewJVMKillAgent(z.ctx, z.jreDir, z.version)
+	if err := z.jvmkill.Supply(); err != nil {
+		z.ctx.Log.Warning("Failed to install JVMKill agent: %s (continuing)", err.Error())
+		// Non-fatal - continue without jvmkill
+	}
+
+	// Install Memory Calculator
+	z.memoryCalc = NewMemoryCalculator(z.ctx, z.jreDir, z.version, javaMajorVersion)
+	if err := z.memoryCalc.Supply(); err != nil {
+		z.ctx.Log.Warning("Failed to install Memory Calculator: %s (continuing)", err.Error())
+		// Non-fatal - continue without memory calculator
+	}
+
+	z.ctx.Log.Info("Zulu JRE installation complete")
+	return nil
+}
+
+// Finalize performs final JRE configuration
+func (z *ZuluJRE) Finalize() error {
+	z.ctx.Log.BeginStep("Finalizing Zulu JRE configuration")
+
+	// Find the actual JAVA_HOME (needed if finalize is called on a fresh instance)
+	if z.javaHome == "" {
+		javaHome, err := z.findJavaHome()
+		if err != nil {
+			z.ctx.Log.Warning("Failed to find JAVA_HOME: %s", err.Error())
+		} else {
+			z.javaHome = javaHome
+		}
+	}
+
+	// Determine Java major version for memory calculator
+	javaMajorVersion := 11 // default
+	if z.javaHome != "" {
+		if ver, err := DetermineJavaVersion(z.javaHome); err == nil {
+			javaMajorVersion = ver
+		}
+	}
+
+	// Reconstruct JVMKill agent component if not already set
+	if z.jvmkill == nil {
+		z.jvmkill = NewJVMKillAgent(z.ctx, z.jreDir, z.version)
+	}
+
+	// Finalize JVMKill agent
+	if err := z.jvmkill.Finalize(); err != nil {
+		z.ctx.Log.Warning("Failed to finalize JVMKill agent: %s", err.Error())
+		// Non-fatal
+	}
+
+	// Reconstruct Memory Calculator component if not already set
+	if z.memoryCalc == nil {
+		z.memoryCalc = NewMemoryCalculator(z.ctx, z.jreDir, z.version, javaMajorVersion)
+	}
+
+	// Finalize Memory Calculator
+	if err := z.memoryCalc.Finalize(); err != nil {
+		z.ctx.Log.Warning("Failed to finalize Memory Calculator: %s", err.Error())
+		// Non-fatal
+	}
+
+	z.ctx.Log.Info("Zulu JRE finalization complete")
+	return nil
+}
+
+// JavaHome returns the path to JAVA_HOME
+func (z *ZuluJRE) JavaHome() string {
+	return z.javaHome
+}
+
+// Version returns the installed JRE version
+func (z *ZuluJRE) Version() string {
+	return z.installedVersion
+}
+
+// findJavaHome locates the actual JAVA_HOME directory after extraction
+// Zulu tarballs usually extract to zulu-* subdirectories
+func (z *ZuluJRE) findJavaHome() (string, error) {
+	entries, err := os.ReadDir(z.jreDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to read JRE directory: %w", err)
+	}
+
+	// Look for zulu-*, jdk-*, or jre-* subdirectory
+	for _, entry := range entries {
+		if entry.IsDir() {
+			name := entry.Name()
+			// Check for common Zulu directory patterns
+			if len(name) > 4 && name[:4] == "zulu" {
+				path := filepath.Join(z.jreDir, name)
+				// Verify it has a bin directory with java
+				if _, err := os.Stat(filepath.Join(path, "bin", "java")); err == nil {
+					return path, nil
+				}
+			}
+			// Also check for standard jdk/jre patterns
+			if len(name) > 3 && (name[:3] == "jdk" || name[:3] == "jre") {
+				path := filepath.Join(z.jreDir, name)
+				if _, err := os.Stat(filepath.Join(path, "bin", "java")); err == nil {
+					return path, nil
+				}
+			}
+		}
+	}
+
+	// If no subdirectory found, check if jreDir itself is valid
+	if _, err := os.Stat(filepath.Join(z.jreDir, "bin", "java")); err == nil {
+		return z.jreDir, nil
+	}
+
+	return "", fmt.Errorf("could not find valid JAVA_HOME in %s", z.jreDir)
+}

@@ -265,3 +265,8 @@ func WriteJavaOpts(ctx *Context, opts string) error {
 
 	return nil
 }
+
+// containsString checks if a string contains a substring (case-insensitive)
+func containsString(s, substr string) bool {
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
+}

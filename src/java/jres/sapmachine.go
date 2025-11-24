@@ -1,0 +1,211 @@
+package jres
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/cloudfoundry/libbuildpack"
+)
+
+// SapMachineJRE implements the JRE interface for SAP Machine OpenJDK
+type SapMachineJRE struct {
+	ctx              *Context
+	jreDir           string
+	version          string
+	javaHome         string
+	memoryCalc       *MemoryCalculator
+	jvmkill          *JVMKillAgent
+	installedVersion string
+}
+
+// NewSapMachineJRE creates a new SAP Machine JRE provider
+func NewSapMachineJRE(ctx *Context) *SapMachineJRE {
+	jreDir := filepath.Join(ctx.Stager.DepDir(), "jre")
+
+	return &SapMachineJRE{
+		ctx:    ctx,
+		jreDir: jreDir,
+	}
+}
+
+// Name returns the name of this JRE provider
+func (s *SapMachineJRE) Name() string {
+	return "SapMachine"
+}
+
+// Detect returns true if SAP Machine JRE should be used
+// SAP Machine is selected via JBP_CONFIG_COMPONENTS environment variable
+func (s *SapMachineJRE) Detect() (bool, error) {
+	// Check if explicitly configured via environment
+	// Format: JBP_CONFIG_COMPONENTS='{jres: ["JavaBuildpack::Jre::SapMachineJRE"]}'
+	configuredJRE := os.Getenv("JBP_CONFIG_COMPONENTS")
+	if configuredJRE != "" && (containsString(configuredJRE, "SapMachineJRE") || containsString(configuredJRE, "SapMachine")) {
+		return true, nil
+	}
+
+	// Also check legacy config
+	if DetectJREByEnv("sap_machine_jre") {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// Supply installs the SAP Machine JRE and its components
+func (s *SapMachineJRE) Supply() error {
+	s.ctx.Log.BeginStep("Installing SAP Machine JRE")
+
+	// Determine version
+	dep, err := GetJREVersion(s.ctx, "sapmachine")
+	if err != nil {
+		s.ctx.Log.Warning("Unable to determine SAP Machine version from manifest, using default")
+		// Fallback to hardcoded version
+		dep = libbuildpack.Dependency{
+			Name:    "sapmachine",
+			Version: "17.0.13",
+		}
+	}
+
+	s.version = dep.Version
+	s.ctx.Log.Info("Installing SAP Machine %s", s.version)
+
+	// Install JRE
+	if err := s.ctx.Installer.InstallDependency(dep, s.jreDir); err != nil {
+		return fmt.Errorf("failed to install SAP Machine: %w", err)
+	}
+
+	// Find the actual JAVA_HOME (handle nested directories from tar extraction)
+	javaHome, err := s.findJavaHome()
+	if err != nil {
+		return fmt.Errorf("failed to find JAVA_HOME: %w", err)
+	}
+	s.javaHome = javaHome
+	s.installedVersion = s.version
+
+	// Set up JAVA_HOME environment
+	if err := SetupJavaHome(s.ctx, s.jreDir); err != nil {
+		return fmt.Errorf("failed to set up JAVA_HOME: %w", err)
+	}
+
+	// Determine Java major version
+	javaMajorVersion, err := DetermineJavaVersion(javaHome)
+	if err != nil {
+		s.ctx.Log.Warning("Could not determine Java version: %s", err.Error())
+		javaMajorVersion = 17 // default for SAP Machine
+	}
+	s.ctx.Log.Info("Detected Java major version: %d", javaMajorVersion)
+
+	// Install JVMKill agent
+	s.jvmkill = NewJVMKillAgent(s.ctx, s.jreDir, s.version)
+	if err := s.jvmkill.Supply(); err != nil {
+		s.ctx.Log.Warning("Failed to install JVMKill agent: %s (continuing)", err.Error())
+		// Non-fatal - continue without jvmkill
+	}
+
+	// Install Memory Calculator
+	s.memoryCalc = NewMemoryCalculator(s.ctx, s.jreDir, s.version, javaMajorVersion)
+	if err := s.memoryCalc.Supply(); err != nil {
+		s.ctx.Log.Warning("Failed to install Memory Calculator: %s (continuing)", err.Error())
+		// Non-fatal - continue without memory calculator
+	}
+
+	s.ctx.Log.Info("SAP Machine JRE installation complete")
+	return nil
+}
+
+// Finalize performs final JRE configuration
+func (s *SapMachineJRE) Finalize() error {
+	s.ctx.Log.BeginStep("Finalizing SAP Machine JRE configuration")
+
+	// Find the actual JAVA_HOME (needed if finalize is called on a fresh instance)
+	if s.javaHome == "" {
+		javaHome, err := s.findJavaHome()
+		if err != nil {
+			s.ctx.Log.Warning("Failed to find JAVA_HOME: %s", err.Error())
+		} else {
+			s.javaHome = javaHome
+		}
+	}
+
+	// Determine Java major version for memory calculator
+	javaMajorVersion := 17 // default
+	if s.javaHome != "" {
+		if ver, err := DetermineJavaVersion(s.javaHome); err == nil {
+			javaMajorVersion = ver
+		}
+	}
+
+	// Reconstruct JVMKill agent component if not already set
+	if s.jvmkill == nil {
+		s.jvmkill = NewJVMKillAgent(s.ctx, s.jreDir, s.version)
+	}
+
+	// Finalize JVMKill agent
+	if err := s.jvmkill.Finalize(); err != nil {
+		s.ctx.Log.Warning("Failed to finalize JVMKill agent: %s", err.Error())
+		// Non-fatal
+	}
+
+	// Reconstruct Memory Calculator component if not already set
+	if s.memoryCalc == nil {
+		s.memoryCalc = NewMemoryCalculator(s.ctx, s.jreDir, s.version, javaMajorVersion)
+	}
+
+	// Finalize Memory Calculator
+	if err := s.memoryCalc.Finalize(); err != nil {
+		s.ctx.Log.Warning("Failed to finalize Memory Calculator: %s", err.Error())
+		// Non-fatal
+	}
+
+	s.ctx.Log.Info("SAP Machine JRE finalization complete")
+	return nil
+}
+
+// JavaHome returns the path to JAVA_HOME
+func (s *SapMachineJRE) JavaHome() string {
+	return s.javaHome
+}
+
+// Version returns the installed JRE version
+func (s *SapMachineJRE) Version() string {
+	return s.installedVersion
+}
+
+// findJavaHome locates the actual JAVA_HOME directory after extraction
+// SAP Machine tarballs usually extract to sapmachine-* or jdk-* subdirectories
+func (s *SapMachineJRE) findJavaHome() (string, error) {
+	entries, err := os.ReadDir(s.jreDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to read JRE directory: %w", err)
+	}
+
+	// Look for sapmachine-*, jdk-*, or jre-* subdirectory
+	for _, entry := range entries {
+		if entry.IsDir() {
+			name := entry.Name()
+			// Check for SAP Machine directory patterns
+			if len(name) > 10 && name[:10] == "sapmachine" {
+				path := filepath.Join(s.jreDir, name)
+				// Verify it has a bin directory with java
+				if _, err := os.Stat(filepath.Join(path, "bin", "java")); err == nil {
+					return path, nil
+				}
+			}
+			// Also check for standard jdk/jre patterns
+			if len(name) > 3 && (name[:3] == "jdk" || name[:3] == "jre") {
+				path := filepath.Join(s.jreDir, name)
+				if _, err := os.Stat(filepath.Join(path, "bin", "java")); err == nil {
+					return path, nil
+				}
+			}
+		}
+	}
+
+	// If no subdirectory found, check if jreDir itself is valid
+	if _, err := os.Stat(filepath.Join(s.jreDir, "bin", "java")); err == nil {
+		return s.jreDir, nil
+	}
+
+	return "", fmt.Errorf("could not find valid JAVA_HOME in %s", s.jreDir)
+}

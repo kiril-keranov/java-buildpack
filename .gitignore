@@ -20,3 +20,5 @@ bin/detect
 bin/finalize
 bin/release
 bin/supply
+TESTING_JRE_PROVIDERS.md
+FEATURE_COMPARISON.md

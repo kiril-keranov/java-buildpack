@@ -1,0 +1,7 @@
+---
+applications:
+- name: test-zulu-jre
+  memory: 1G
+  env:
+    JBP_CONFIG_COMPONENTS: '{"jres": ["JavaBuildpack::Jre::ZuluJRE"]}'
+    BP_JAVA_VERSION: "11"

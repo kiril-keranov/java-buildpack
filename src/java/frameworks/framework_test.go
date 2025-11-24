@@ -172,11 +172,12 @@ func TestNewRelicFrameworkDetect(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, nil, &libbuildpack.Manifest{})
+	logger := libbuildpack.NewLogger(os.Stdout)
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, logger, &libbuildpack.Manifest{})
 
 	ctx := &frameworks.Context{
 		Stager: stager,
-		Log:    &libbuildpack.Logger{},
+		Log:    logger,
 	}
 
 	framework := frameworks.NewNewRelicFramework(ctx)
@@ -221,11 +222,12 @@ func TestAppDynamicsFrameworkDetect(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, nil, &libbuildpack.Manifest{})
+	logger := libbuildpack.NewLogger(os.Stdout)
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, logger, &libbuildpack.Manifest{})
 
 	ctx := &frameworks.Context{
 		Stager: stager,
-		Log:    &libbuildpack.Logger{},
+		Log:    logger,
 	}
 
 	framework := frameworks.NewAppDynamicsFramework(ctx)
@@ -272,11 +274,12 @@ func TestDynatraceFrameworkDetect(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, nil, &libbuildpack.Manifest{})
+	logger := libbuildpack.NewLogger(os.Stdout)
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, logger, &libbuildpack.Manifest{})
 
 	ctx := &frameworks.Context{
 		Stager: stager,
-		Log:    &libbuildpack.Logger{},
+		Log:    logger,
 	}
 
 	framework := frameworks.NewDynatraceFramework(ctx)
@@ -414,11 +417,12 @@ func TestFrameworkDetectAllWithMultipleFrameworks(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, nil, &libbuildpack.Manifest{})
+	logger := libbuildpack.NewLogger(os.Stdout)
+	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, logger, &libbuildpack.Manifest{})
 
 	ctx := &frameworks.Context{
 		Stager: stager,
-		Log:    &libbuildpack.Logger{},
+		Log:    logger,
 	}
 
 	// Create registry with multiple frameworks
@@ -507,3 +511,33 @@ func TestVCAPServicesEmptyCredentials(t *testing.T) {
 		t.Error("Expected empty credentials map")
 	}
 }
+
+// ==============================================================================
+// NOTE: Supply() and Finalize() Testing Strategy
+// ==============================================================================
+//
+// Supply() and Finalize() methods are NOT unit tested here because they require:
+// 1. Real manifest.yml with valid dependency entries
+// 2. Actual file downloads via Installer.InstallDependency()
+// 3. Real filesystem operations in deps directory
+//
+// These methods should be tested via:
+// - Integration tests (src/java/integration/) with real packaged buildpack
+// - BRATS tests that deploy actual applications
+//
+// Unit tests focus on:
+// ✅ Detection logic (VCAP_SERVICES parsing, environment detection)
+// ✅ VCAP_SERVICES parsing and credential extraction
+// ✅ Framework registry operations
+//
+// Coverage goal: Focus on testable components (40%+ achievable with detection tests)
+//  Current coverage breakdown:
+//   - Detect() methods: ~71% (good coverage via unit tests)
+//   - Supply() methods: 0% (requires integration tests)
+//   - Finalize() methods: 0% (requires integration tests)
+//
+// To achieve better coverage, add:
+// - More VCAP_SERVICES parsing edge cases
+// - Framework registry error handling tests
+// - Credential validation tests (without actual installation)
+// ==============================================================================

@@ -27,9 +27,10 @@ func (d *DynatraceFramework) Detect() (string, error) {
 	}
 
 	// Dynatrace can be bound as:
-	// - "dynatrace" service
+	// - "dynatrace" service (marketplace or label)
 	// - Services with "dynatrace" tag
-	if vcapServices.HasService("dynatrace") || vcapServices.HasTag("dynatrace") {
+	// - User-provided services with "dynatrace" in the name (Docker platform)
+	if vcapServices.HasService("dynatrace") || vcapServices.HasTag("dynatrace") || vcapServices.HasServiceByNamePattern("dynatrace") {
 		return "Dynatrace OneAgent", nil
 	}
 
@@ -62,6 +63,11 @@ func (d *DynatraceFramework) Supply() error {
 	// Get Dynatrace configuration from service binding
 	vcapServices, _ := GetVCAPServices()
 	service := vcapServices.GetService("dynatrace")
+
+	// If not found by label, try user-provided services (Docker platform)
+	if service == nil {
+		service = vcapServices.GetServiceByNamePattern("dynatrace")
+	}
 
 	// Build agentpath options
 	javaOpts := fmt.Sprintf("-agentpath:%s", agentLib)

@@ -27,9 +27,10 @@ func (a *AppDynamicsFramework) Detect() (string, error) {
 	}
 
 	// AppDynamics can be bound as:
-	// - "appdynamics" service
+	// - "appdynamics" service (marketplace or label)
 	// - Services with "appdynamics" tag
-	if vcapServices.HasService("appdynamics") || vcapServices.HasTag("appdynamics") {
+	// - User-provided services with "appdynamics" in the name (Docker platform)
+	if vcapServices.HasService("appdynamics") || vcapServices.HasTag("appdynamics") || vcapServices.HasServiceByNamePattern("appdynamics") {
 		return "AppDynamics Agent", nil
 	}
 
@@ -62,6 +63,11 @@ func (a *AppDynamicsFramework) Supply() error {
 	// Get AppDynamics configuration from service binding
 	vcapServices, _ := GetVCAPServices()
 	service := vcapServices.GetService("appdynamics")
+
+	// If not found by label, try user-provided services (Docker platform)
+	if service == nil {
+		service = vcapServices.GetServiceByNamePattern("appdynamics")
+	}
 
 	// Build javaagent options
 	javaOpts := fmt.Sprintf("-javaagent:%s", agentJar)

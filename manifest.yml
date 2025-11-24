@@ -18,6 +18,10 @@ pre_package: scripts/build.sh
 default_versions:
 - name: openjdk
   version: 17.x
+- name: zulu
+  version: 11.x
+- name: sapmachine
+  version: 17.x
 - name: tomcat
   version: 10.1.x
 - name: groovy
@@ -42,6 +46,12 @@ default_versions:
 url_to_dependency_map:
 - match: openjdk-jre-(\d+\.\d+\.\d+)
   name: openjdk
+  version: $1
+- match: zulu(\d+\.\d+\.\d+)-.*-jre(\d+\.\d+\.\d+)
+  name: zulu
+  version: $2
+- match: sapmachine-jre-(\d+\.\d+\.\d+)
+  name: sapmachine
   version: $1
 - match: tomcat-(\d+\.\d+\.\d+)
   name: tomcat
@@ -151,6 +161,61 @@ dependencies:
   sha256: 1233cbec40f05c76ad926b68521ae78c6ae4f454996ef549602be6987069fa77
   cf_stacks:
   - cflinuxfs4
+
+# Zulu JRE versions (Azul Zulu OpenJDK)
+# Note: These are placeholder entries. Actual downloads require proper repository setup.
+# Repository: https://cdn.azul.com/zulu/bin
+# Version 8
+- name: zulu
+  version: 8.0.422
+  uri: https://cdn.azul.com/zulu/bin/zulu8.80.0.17-ca-jre8.0.422-linux_x64.tar.gz
+  sha256: 7ff2e01766fe9b1f55cd441a0b14f3889f479b5d963bfbf5df9d1b7d82ac5c87
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Version 11
+- name: zulu
+  version: 11.0.25
+  uri: https://cdn.azul.com/zulu/bin/zulu11.76.21-ca-jre11.0.25-linux_x64.tar.gz
+  sha256: 2696d23e20a7e6cc22d36a27c3d917b6b390d0e6ac1819e791d99a1fc159317c
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Version 17
+- name: zulu
+  version: 17.0.13
+  uri: https://cdn.azul.com/zulu/bin/zulu17.54.21-ca-jre17.0.13-linux_x64.tar.gz
+  sha256: 2d74f026d0d184075ad99de343c6a24bd702eb25d87ce6de5e3ab8df1cd3ef25
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# SAP Machine JRE versions
+# Repository: https://github.com/SAP/SapMachine/releases
+# Version 11
+- name: sapmachine
+  version: 11.0.25
+  uri: https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.25/sapmachine-jre-11.0.25_linux-x64_bin.tar.gz
+  sha256: 10f3eb5b93c2c26f7c69a3690d5877b401b5ab24a6b1798fac5518beb1f1f839
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Version 17
+- name: sapmachine
+  version: 17.0.13
+  uri: https://github.com/SAP/SapMachine/releases/download/sapmachine-17.0.13/sapmachine-jre-17.0.13_linux-x64_bin.tar.gz
+  sha256: b5f16befcb6415cfcf3bdb57b361c8eeca8176d494cd1e6c067cd56acec1afe6
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# GraalVM JRE versions
+# Note: GraalVM requires user-provided repository configuration via JBP_CONFIG_GRAAL_VM_JRE
+# Users must specify repository_root in buildpack.yml or environment variables
+# Example: JBP_CONFIG_GRAAL_VM_JRE='{jre: {repository_root: "https://example.com/graalvm"}}'
 
 # Tomcat versions
 - name: tomcat

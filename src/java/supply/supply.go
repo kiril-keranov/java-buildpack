@@ -99,10 +99,9 @@ func (s *Supplier) installJRE() error {
 	// Register JRE providers in priority order
 	// OpenJDK is the default and most commonly used
 	registry.Register(jres.NewOpenJDKJRE(ctx))
-	// Additional JRE providers can be added here:
-	// registry.Register(jres.NewZuluJRE(ctx))
-	// registry.Register(jres.NewGraalVMJRE(ctx))
-	// registry.Register(jres.NewSAPMachineJRE(ctx))
+	registry.Register(jres.NewZuluJRE(ctx))
+	registry.Register(jres.NewSapMachineJRE(ctx))
+	registry.Register(jres.NewGraalVMJRE(ctx))
 
 	// Detect which JRE to use
 	jre, jreName, err := registry.Detect()

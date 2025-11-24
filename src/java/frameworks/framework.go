@@ -117,3 +117,81 @@ func (v VCAPServices) HasTag(tag string) bool {
 	}
 	return false
 }
+
+// HasServiceByNamePattern checks if any service in "user-provided" matches the pattern
+// This is needed for Docker platform where services are under "user-provided" label
+func (v VCAPServices) HasServiceByNamePattern(pattern string) bool {
+	userProvided, exists := v["user-provided"]
+	if !exists {
+		return false
+	}
+
+	for _, service := range userProvided {
+		// Check if service name contains the pattern (case-insensitive)
+		// Pattern examples: "newrelic", "appdynamics", "dynatrace"
+		if matchesPattern(service.Name, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+// GetServiceByNamePattern returns the first service in "user-provided" matching the pattern
+func (v VCAPServices) GetServiceByNamePattern(pattern string) *VCAPService {
+	userProvided, exists := v["user-provided"]
+	if !exists {
+		return nil
+	}
+
+	for _, service := range userProvided {
+		if matchesPattern(service.Name, pattern) {
+			return &service
+		}
+	}
+	return nil
+}
+
+// matchesPattern checks if a service name matches a pattern
+// Pattern matching is case-insensitive and checks for substring match
+func matchesPattern(serviceName, pattern string) bool {
+	// Simple substring match - case insensitive
+	// Examples: "newrelic" matches "newrelic", "my-newrelic-service", "newrelic-prod"
+	return containsIgnoreCase(serviceName, pattern)
+}
+
+// containsIgnoreCase checks if s contains substr (case-insensitive)
+func containsIgnoreCase(s, substr string) bool {
+	sLower := toLower(s)
+	substrLower := toLower(substr)
+	return stringContains(sLower, substrLower)
+}
+
+// toLower converts string to lowercase (simplified implementation)
+func toLower(s string) string {
+	result := make([]byte, len(s))
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= 'A' && c <= 'Z' {
+			result[i] = c + 32
+		} else {
+			result[i] = c
+		}
+	}
+	return string(result)
+}
+
+// stringContains checks if s contains substr
+func stringContains(s, substr string) bool {
+	if len(substr) == 0 {
+		return true
+	}
+	if len(s) < len(substr) {
+		return false
+	}
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}

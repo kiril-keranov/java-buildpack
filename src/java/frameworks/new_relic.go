@@ -27,9 +27,11 @@ func (n *NewRelicFramework) Detect() (string, error) {
 	}
 
 	// New Relic can be bound as:
-	// - "newrelic" service
+	// - "newrelic" service (marketplace or label)
 	// - Services with "newrelic" tag
-	if vcapServices.HasService("newrelic") || vcapServices.HasTag("newrelic") {
+	// - User-provided services with "newrelic" in the name (Docker platform)
+	if vcapServices.HasService("newrelic") || vcapServices.HasTag("newrelic") || vcapServices.HasServiceByNamePattern("newrelic") {
+		n.context.Log.Info("New Relic service detected!")
 		return "New Relic Agent", nil
 	}
 
@@ -38,6 +40,7 @@ func (n *NewRelicFramework) Detect() (string, error) {
 		return "New Relic Agent", nil
 	}
 
+	n.context.Log.Debug("New Relic not detected")
 	return "", nil
 }
 
@@ -70,6 +73,11 @@ func (n *NewRelicFramework) Supply() error {
 	// Get New Relic configuration from service binding
 	vcapServices, _ := GetVCAPServices()
 	service := vcapServices.GetService("newrelic")
+
+	// If not found by label, try user-provided services (Docker platform)
+	if service == nil {
+		service = vcapServices.GetServiceByNamePattern("newrelic")
+	}
 
 	if service != nil {
 		// Add license key from service credentials
