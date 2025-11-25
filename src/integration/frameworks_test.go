@@ -517,6 +517,38 @@ func testFrameworks(platform switchblade.Platform, fixtures string) func(*testin
 			})
 		})
 
+		context("mTLS Support", func() {
+			context("with Client Certificate Mapper enabled", func() {
+				it("detects and installs Client Certificate Mapper for mTLS support", func() {
+					deployment, logs, err := platform.Deploy.
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION":                      "11",
+							"JBP_CONFIG_CLIENT_CERTIFICATE_MAPPER": "'{enabled: true}'",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_tomcat"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					// Client Certificate Mapper should be detected and installed
+					Expect(logs.String()).To(ContainSubstring("Client Certificate Mapper"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+
+				it("skips Client Certificate Mapper when disabled", func() {
+					deployment, logs, err := platform.Deploy.
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION":                      "11",
+							"JBP_CONFIG_CLIENT_CERTIFICATE_MAPPER": "'{enabled: false}'",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_tomcat"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					// Should not install when explicitly disabled
+					Expect(logs.String()).NotTo(ContainSubstring("Client Certificate Mapper"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+		})
+
 		context("Utility Frameworks", func() {
 			context("with Debug enabled", func() {
 				it("configures remote debugging via JDWP", func() {

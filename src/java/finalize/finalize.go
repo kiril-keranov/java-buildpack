@@ -162,6 +162,9 @@ func (f *Finalizer) finalizeFrameworks() error {
 	registry.Register(frameworks.NewPostgresqlJdbcFramework(ctx))
 	registry.Register(frameworks.NewMariaDBJDBCFramework(ctx))
 
+	// mTLS Support (Priority 1)
+	registry.Register(frameworks.NewClientCertificateMapperFramework(ctx))
+
 	// Development Tools (Priority 1)
 	registry.Register(frameworks.NewDebugFramework(ctx))
 	registry.Register(frameworks.NewJmxFramework(ctx))

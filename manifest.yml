@@ -36,6 +36,8 @@ default_versions:
   version: 2.x
 - name: java-cfenv
   version: 3.x
+- name: client-certificate-mapper
+  version: 2.x
 - name: postgresql-jdbc
   version: 42.x
 - name: mariadb-jdbc
@@ -105,6 +107,9 @@ url_to_dependency_map:
   version: $1
 - match: java-cfenv-(\d+\.\d+\.\d+)
   name: java-cfenv
+  version: $1
+- match: client-certificate-mapper-(\d+\.\d+\.\d+)
+  name: client-certificate-mapper
   version: $1
 - match: postgresql-(\d+\.\d+\.\d+)
   name: postgresql-jdbc
@@ -467,6 +472,15 @@ dependencies:
   version: 3.5.0
   uri: https://java-buildpack.cloudfoundry.org/java-cfenv/java-cfenv-3.5.0.jar
   sha256: 6a761fe530783c0ec9e6d1713ef54f6504803bf1ad02856d3ee7b46211f905c5
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Client Certificate Mapper (mTLS support)
+- name: client-certificate-mapper
+  version: 2.0.1
+  uri: https://java-buildpack.cloudfoundry.org/client-certificate-mapper/client-certificate-mapper-2.0.1.jar
+  sha256: f7f53a460bcd4b0cead4da99dcb251bd283bd5fa4e421eeb52b86986d266cde9
   cf_stacks:
   - cflinuxfs4
   - cflinuxfs3
