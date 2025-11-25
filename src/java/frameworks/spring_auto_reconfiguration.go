@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/cloudfoundry/libbuildpack"
 )
@@ -121,9 +122,17 @@ func (s *SpringAutoReconfigurationFramework) isEnabled() bool {
 	// Check JBP_CONFIG_SPRING_AUTO_RECONFIGURATION environment variable
 	config := os.Getenv("JBP_CONFIG_SPRING_AUTO_RECONFIGURATION")
 	if config != "" {
-		// If explicitly configured, respect that setting
-		// For now, we'll assume if it's set, it's to disable
-		// A more robust implementation would parse the YAML/JSON
+		// Parse the configuration string
+		// Expected format: '{enabled: true}' or '{enabled: false}'
+		// Simple check: if it contains "false", it's disabled
+		if strings.Contains(config, "false") {
+			return false
+		}
+		// If it contains "true" or any other value, consider it enabled
+		if strings.Contains(config, "true") {
+			return true
+		}
+		// If config is set but doesn't contain true/false, default to disabled for safety
 		return false
 	}
 
@@ -133,20 +142,11 @@ func (s *SpringAutoReconfigurationFramework) isEnabled() bool {
 
 // hasSpring checks if Spring Core is present in the application
 func (s *SpringAutoReconfigurationFramework) hasSpring() bool {
-	// Look for spring-core*.jar in the application
-	pattern := filepath.Join(s.context.Stager.BuildDir(), "**", "spring-core*.jar")
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return false
-	}
-
-	if len(matches) > 0 {
-		return true
-	}
-
-	// Also check common locations
+	// Check common locations for spring-core*.jar
+	// Note: Go's filepath.Glob does not support ** recursive patterns
 	commonPaths := []string{
 		filepath.Join(s.context.Stager.BuildDir(), "WEB-INF", "lib", "spring-core*.jar"),
+		filepath.Join(s.context.Stager.BuildDir(), "WEB-INF", "lib", "org.springframework.spring-core*.jar"),
 		filepath.Join(s.context.Stager.BuildDir(), "lib", "spring-core*.jar"),
 		filepath.Join(s.context.Stager.BuildDir(), "BOOT-INF", "lib", "spring-core*.jar"),
 	}
@@ -188,14 +188,20 @@ func (s *SpringAutoReconfigurationFramework) hasJavaCfEnv() bool {
 
 // hasSpringCloudConnectors checks if Spring Cloud Connectors are present
 func (s *SpringAutoReconfigurationFramework) hasSpringCloudConnectors() bool {
-	patterns := []string{
-		filepath.Join(s.context.Stager.BuildDir(), "**", "spring-cloud-cloudfoundry-connector*.jar"),
-		filepath.Join(s.context.Stager.BuildDir(), "**", "spring-cloud-spring-service-connector*.jar"),
+	// Check common locations for Spring Cloud Connectors JARs
+	// Note: Go's filepath.Glob does not support ** recursive patterns
+	commonPaths := []string{
+		filepath.Join(s.context.Stager.BuildDir(), "WEB-INF", "lib", "spring-cloud-cloudfoundry-connector*.jar"),
+		filepath.Join(s.context.Stager.BuildDir(), "WEB-INF", "lib", "spring-cloud-spring-service-connector*.jar"),
+		filepath.Join(s.context.Stager.BuildDir(), "lib", "spring-cloud-cloudfoundry-connector*.jar"),
+		filepath.Join(s.context.Stager.BuildDir(), "lib", "spring-cloud-spring-service-connector*.jar"),
+		filepath.Join(s.context.Stager.BuildDir(), "BOOT-INF", "lib", "spring-cloud-cloudfoundry-connector*.jar"),
+		filepath.Join(s.context.Stager.BuildDir(), "BOOT-INF", "lib", "spring-cloud-spring-service-connector*.jar"),
 	}
 
-	for _, pattern := range patterns {
-		matches, err := filepath.Glob(pattern)
-		if err == nil && len(matches) > 0 {
+	for _, path := range commonPaths {
+		matches, _ := filepath.Glob(path)
+		if len(matches) > 0 {
 			return true
 		}
 	}

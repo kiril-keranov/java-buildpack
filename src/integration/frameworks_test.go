@@ -572,5 +572,298 @@ func testFrameworks(platform switchblade.Platform, fixtures string) func(*testin
 				})
 			})
 		})
+
+		context("Spring Configuration", func() {
+			context("with Spring Auto-reconfiguration", func() {
+				it("detects and installs Spring Auto-reconfiguration for Spring apps", func() {
+					deployment, logs, err := platform.Deploy.
+						WithServices(map[string]switchblade.Service{
+							"postgres": {
+								"uri":      "postgres://user:password@localhost:5432/mydb",
+								"username": "testuser",
+								"password": "testpass",
+							},
+						}).
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION":                        "11",
+							"JBP_CONFIG_SPRING_AUTO_RECONFIGURATION": "'{enabled: true}'",
+						}).
+						Execute(name, filepath.Join(fixtures, "framework_auto_reconfiguration_servlet_3"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					// Spring Auto-reconfiguration should be detected for Spring apps with services
+					Expect(logs.String()).To(ContainSubstring("Spring Auto-reconfiguration"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+
+				it("skips Spring Auto-reconfiguration when disabled", func() {
+					deployment, logs, err := platform.Deploy.
+						WithServices(map[string]switchblade.Service{
+							"postgres": {
+								"uri": "postgres://user:password@localhost:5432/mydb",
+							},
+						}).
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION":                        "11",
+							"JBP_CONFIG_SPRING_AUTO_RECONFIGURATION": "'{enabled: false}'",
+						}).
+						Execute(name, filepath.Join(fixtures, "framework_auto_reconfiguration_servlet_3"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					// Should not install when explicitly disabled
+					Expect(logs.String()).NotTo(ContainSubstring("Spring Auto-reconfiguration"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+
+			context("with Java CF Env", func() {
+				it("detects and installs Java CF Env for Spring Boot 3.x apps", func() {
+					deployment, logs, err := platform.Deploy.
+						WithServices(map[string]switchblade.Service{
+							"postgres": {
+								"uri":      "postgres://user:password@localhost:5432/mydb",
+								"username": "testuser",
+								"password": "testpass",
+							},
+						}).
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION":        "17",
+							"JBP_CONFIG_JAVA_CF_ENV": "'{enabled: true}'",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					// Java CF Env should be detected for Spring Boot 3.x apps
+					Expect(logs.String()).To(ContainSubstring("Java CF Env"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+		})
+
+		context("JVM Configuration", func() {
+			context("with Java Opts Framework", func() {
+				it("applies custom JAVA_OPTS from environment", func() {
+					deployment, logs, err := platform.Deploy.
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION": "11",
+							"JAVA_OPTS":       "-Xmx512m -Dcustom.property=test",
+						}).
+						Execute(name, filepath.Join(fixtures, "integration_valid"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					// Java Opts framework should detect JAVA_OPTS environment variable
+					Expect(logs.String()).To(ContainSubstring("Java Opts"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+
+				it("applies custom JAVA_OPTS from configuration file", func() {
+					deployment, logs, err := platform.Deploy.
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION":      "11",
+							"JBP_CONFIG_JAVA_OPTS": "'{java_opts: [\"-Xms256m\", \"-Xmx1024m\"]}'",
+						}).
+						Execute(name, filepath.Join(fixtures, "integration_valid"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					// Java Opts framework should detect configuration
+					Expect(logs.String()).To(ContainSubstring("Java Opts"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+		})
+
+		context("Development Tools", func() {
+			context("with JRebel Agent", func() {
+				it("detects and installs JRebel agent when rebel-remote.xml present", func() {
+					deployment, logs, err := platform.Deploy.
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION":         "11",
+							"JBP_CONFIG_JREBEL_AGENT": "'{enabled: true}'",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					// JRebel agent should be detected when enabled
+					Expect(logs.String()).To(ContainSubstring("JRebel"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+
+			context("with YourKit Profiler", func() {
+				it("detects and installs YourKit profiler when enabled", func() {
+					deployment, logs, err := platform.Deploy.
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION":              "11",
+							"JBP_CONFIG_YOUR_KIT_PROFILER": "'{enabled: true}'",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					// YourKit profiler should be detected when enabled
+					Expect(logs.String()).To(ContainSubstring("YourKit"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+
+			context("with JProfiler Profiler", func() {
+				it("detects and installs JProfiler profiler when enabled", func() {
+					deployment, logs, err := platform.Deploy.
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION":               "11",
+							"JBP_CONFIG_JPROFILER_PROFILER": "'{enabled: true}'",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					// JProfiler profiler should be detected when enabled
+					Expect(logs.String()).To(ContainSubstring("JProfiler"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+		})
+
+		context("Specialized APM Agents", func() {
+			context("with Contrast Security service binding", func() {
+				it("detects and installs Contrast Security agent", func() {
+					deployment, logs, err := platform.Deploy.
+						WithServices(map[string]switchblade.Service{
+							"contrast-security": {
+								"api_key":        "test-api-key",
+								"service_key":    "test-service-key",
+								"teamserver_url": "https://contrast.example.com",
+								"username":       "agent@example.com",
+							},
+						}).
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION": "11",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					Expect(logs.String()).To(ContainSubstring("Contrast Security"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+
+			context("with Sealights service binding", func() {
+				it("detects and installs Sealights agent", func() {
+					deployment, logs, err := platform.Deploy.
+						WithServices(map[string]switchblade.Service{
+							"sealights": {
+								"token":     "test-token",
+								"lab_id":    "test-lab-id",
+								"bs_id":     "test-bs-id",
+								"proxy_url": "https://sealights.example.com",
+							},
+						}).
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION": "11",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					Expect(logs.String()).To(ContainSubstring("Sealights"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+
+			context("with Takipi service binding", func() {
+				it("detects and installs Takipi agent", func() {
+					deployment, logs, err := platform.Deploy.
+						WithServices(map[string]switchblade.Service{
+							"takipi": {
+								"secret_key": "test-secret-key",
+								"server":     "https://takipi.example.com",
+							},
+						}).
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION": "11",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					Expect(logs.String()).To(ContainSubstring("Takipi"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+
+			context("with Introscope service binding", func() {
+				it("detects and installs Introscope agent", func() {
+					deployment, logs, err := platform.Deploy.
+						WithServices(map[string]switchblade.Service{
+							"introscope": {
+								"agent_manager_url": "introscope.example.com:5001",
+								"agent_name":        "test-agent",
+							},
+						}).
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION": "11",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					Expect(logs.String()).To(ContainSubstring("Introscope"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+
+			context("with Riverbed AppInternals service binding", func() {
+				it("detects and installs Riverbed AppInternals agent", func() {
+					deployment, logs, err := platform.Deploy.
+						WithServices(map[string]switchblade.Service{
+							"riverbed-appinternals": {
+								"analysis_server": "appinternals.example.com:4144",
+								"agent_name":      "test-agent",
+							},
+						}).
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION": "11",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					Expect(logs.String()).To(ContainSubstring("Riverbed AppInternals"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+		})
+
+		context("Advanced Tooling", func() {
+			context("with AspectJ Weaver", func() {
+				it("detects and installs AspectJ Weaver when enabled", func() {
+					deployment, logs, err := platform.Deploy.
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION":                 "11",
+							"JBP_CONFIG_ASPECTJ_WEAVER_AGENT": "'{enabled: true}'",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					// AspectJ Weaver should be detected when enabled
+					Expect(logs.String()).To(ContainSubstring("AspectJ"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+
+			context("with Google Stackdriver Debugger", func() {
+				it("detects and installs Google Stackdriver Debugger", func() {
+					deployment, logs, err := platform.Deploy.
+						WithServices(map[string]switchblade.Service{
+							"google-stackdriver-debugger": {
+								"project_id":  "test-project",
+								"credentials": `{"type":"service_account","project_id":"test-project"}`,
+							},
+						}).
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION": "11",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					Expect(logs.String()).To(ContainSubstring("Stackdriver Debugger"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+		})
 	}
 }
