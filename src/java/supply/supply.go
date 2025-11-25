@@ -177,6 +177,7 @@ func (s *Supplier) installFrameworks() error {
 	registry.Register(frameworks.NewGoogleStackdriverDebuggerFramework(ctx))
 	registry.Register(frameworks.NewGoogleStackdriverProfilerFramework(ctx))
 	registry.Register(frameworks.NewIntroscopeAgentFramework(ctx))
+	registry.Register(frameworks.NewOpenTelemetryJavaagentFramework(ctx))
 	registry.Register(frameworks.NewRiverbedAppInternalsAgentFramework(ctx))
 	registry.Register(frameworks.NewSkyWalkingAgentFramework(ctx))
 	registry.Register(frameworks.NewSplunkOtelJavaAgentFramework(ctx))

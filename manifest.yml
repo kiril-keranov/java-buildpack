@@ -52,6 +52,8 @@ default_versions:
   version: 2.x
 - name: google-stackdriver-profiler
   version: 0.x
+- name: open-telemetry-javaagent
+  version: 2.x
 
 url_to_dependency_map:
 - match: openjdk-jre-(\d+\.\d+\.\d+)
@@ -113,6 +115,9 @@ url_to_dependency_map:
   version: $1
 - match: profiler_java_agent-(\d+\.\d+\.\d+)
   name: google-stackdriver-profiler
+  version: $1
+- match: opentelemetry-javaagent-(\d+\.\d+\.\d+)\.jar
+  name: open-telemetry-javaagent
   version: $1
 
 dependency_deprecation_dates:
@@ -400,6 +405,15 @@ dependencies:
   version: 0.4.0
   uri: https://storage.googleapis.com/cloud-profiler/java/latest/profiler_java_agent.tar.gz
   sha256: 509b87c406b59424cb101d561567cadad97d3fd1c235224bca2a114d4a7bde0c
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# OpenTelemetry Javaagent
+- name: open-telemetry-javaagent
+  version: 2.22.0
+  uri: https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.22.0/opentelemetry-javaagent.jar
+  sha256: 53b34ae7a9ac9497ac16607fc6c74f10bb3cf818dc241789a067c47b0bdc2ea0
   cf_stacks:
   - cflinuxfs4
   - cflinuxfs3

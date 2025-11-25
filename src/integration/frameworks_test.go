@@ -388,6 +388,45 @@ func testFrameworks(platform switchblade.Platform, fixtures string) func(*testin
 				})
 			})
 
+			context("with OpenTelemetry service binding", func() {
+				it("detects and installs OpenTelemetry Javaagent", func() {
+					deployment, logs, err := platform.Deploy.
+						WithServices(map[string]switchblade.Service{
+							"otel-collector": {
+								"otel.exporter.otlp.endpoint": "http://otel-collector:4317",
+								"otel.service.name":           "my-test-app",
+							},
+						}).
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION": "17",
+						}).
+						Execute(name, filepath.Join(fixtures, "integration_valid"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					Expect(logs.String()).To(ContainSubstring("OpenTelemetry"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+
+				it("configures OpenTelemetry with OTLP endpoint from service binding", func() {
+					deployment, logs, err := platform.Deploy.
+						WithServices(map[string]switchblade.Service{
+							"my-otel-service": {
+								"otel.exporter.otlp.endpoint": "https://otel.example.com:4318",
+								"otel.traces.exporter":        "otlp",
+								"otel.metrics.exporter":       "otlp",
+							},
+						}).
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION": "11",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					Expect(logs.String()).To(ContainSubstring("OpenTelemetry"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+
 			context("without APM service bindings", func() {
 				it("does not install any APM agents", func() {
 					deployment, logs, err := platform.Deploy.
