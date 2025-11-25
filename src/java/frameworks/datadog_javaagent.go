@@ -76,14 +76,12 @@ func (d *DatadogJavaagentFramework) Detect() (string, error) {
 
 // Supply downloads and installs the Datadog Java agent
 func (d *DatadogJavaagentFramework) Supply() error {
-	// Check if Datadog buildpack is present
-	if !d.hasDatadogBuildpack() {
-		d.context.Log.Error("Datadog Buildpack is required, but not found")
-		d.context.Log.Error("Please use the Datadog buildpack in conjunction with the Java buildpack")
-		return nil // Non-blocking
-	}
-
 	d.context.Log.BeginStep("Installing Datadog Java agent")
+
+	// Note: Datadog buildpack is optional but recommended for full functionality
+	if d.hasDatadogBuildpack() {
+		d.context.Log.Debug("Datadog buildpack detected - enhanced functionality available")
+	}
 
 	// Get dependency from manifest
 	dep, err := d.context.Manifest.DefaultVersion("datadog-javaagent")
@@ -122,10 +120,6 @@ func (d *DatadogJavaagentFramework) Supply() error {
 func (d *DatadogJavaagentFramework) Finalize() error {
 	if d.jarPath == "" {
 		return nil
-	}
-
-	if !d.hasDatadogBuildpack() {
-		return nil // Skip if buildpack not present
 	}
 
 	d.context.Log.BeginStep("Configuring Datadog Java agent")
