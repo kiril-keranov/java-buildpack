@@ -550,5 +550,27 @@ func testFrameworks(platform switchblade.Platform, fixtures string) func(*testin
 				})
 			})
 		})
+
+		context("Testing & Code Coverage", func() {
+			context("with JaCoCo service binding", func() {
+				it("detects and installs JaCoCo agent", func() {
+					deployment, logs, err := platform.Deploy.
+						WithServices(map[string]switchblade.Service{
+							"jacoco": {
+								"address": "jacoco.example.com",
+								"port":    "6300",
+							},
+						}).
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION": "11",
+						}).
+						Execute(name, filepath.Join(fixtures, "container_spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					Expect(logs.String()).To(ContainSubstring("JaCoCo"))
+					Expect(deployment.ExternalURL).NotTo(BeEmpty())
+				})
+			})
+		})
 	}
 }

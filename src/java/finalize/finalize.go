@@ -178,6 +178,14 @@ func (f *Finalizer) finalizeFrameworks() error {
 	registry.Register(frameworks.NewSkyWalkingAgentFramework(ctx))
 	registry.Register(frameworks.NewSplunkOtelJavaAgentFramework(ctx))
 
+	// Testing & Code Coverage (Priority 3)
+	registry.Register(frameworks.NewJacocoAgentFramework(ctx))
+
+	// Code Instrumentation (Priority 3)
+	registry.Register(frameworks.NewJRebelAgentFramework(ctx))
+	registry.Register(frameworks.NewContrastSecurityAgentFramework(ctx))
+	registry.Register(frameworks.NewAspectJWeaverAgentFramework(ctx))
+
 	// Detect all frameworks that were installed
 	detectedFrameworks, frameworkNames, err := registry.DetectAll()
 	if err != nil {

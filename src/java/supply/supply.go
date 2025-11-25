@@ -182,10 +182,13 @@ func (s *Supplier) installFrameworks() error {
 	registry.Register(frameworks.NewSkyWalkingAgentFramework(ctx))
 	registry.Register(frameworks.NewSplunkOtelJavaAgentFramework(ctx))
 
-	// Additional frameworks (Priority 3+) to be added:
-	// registry.Register(frameworks.NewJaCoCoFramework(ctx))
-	// registry.Register(frameworks.NewJRebelFramework(ctx))
-	// etc.
+	// Testing & Code Coverage (Priority 3)
+	registry.Register(frameworks.NewJacocoAgentFramework(ctx))
+
+	// Additional Development Tools (Priority 4)
+	registry.Register(frameworks.NewJRebelAgentFramework(ctx))
+	registry.Register(frameworks.NewContrastSecurityAgentFramework(ctx))
+	registry.Register(frameworks.NewAspectJWeaverAgentFramework(ctx))
 
 	// Detect all frameworks that should be installed
 	detectedFrameworks, frameworkNames, err := registry.DetectAll()
