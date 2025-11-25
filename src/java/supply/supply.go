@@ -35,6 +35,7 @@ func Run(s *Supplier) error {
 	registry := containers.NewRegistry(ctx)
 	registry.Register(containers.NewSpringBootContainer(ctx))
 	registry.Register(containers.NewTomcatContainer(ctx))
+	registry.Register(containers.NewSpringBootCLIContainer(ctx)) // MUST come before Groovy (stricter detection rules)
 	registry.Register(containers.NewGroovyContainer(ctx))
 	registry.Register(containers.NewPlayContainer(ctx))
 	registry.Register(containers.NewDistZipContainer(ctx))

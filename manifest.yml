@@ -26,6 +26,8 @@ default_versions:
   version: 10.1.x
 - name: groovy
   version: 4.0.x
+- name: spring-boot-cli
+  version: 2.7.x
 - name: jvmkill
   version: 1.x
 - name: memory-calculator
@@ -63,6 +65,9 @@ url_to_dependency_map:
   version: $1
 - match: tomcat-(\d+\.\d+\.\d+)
   name: tomcat
+  version: $1
+- match: spring-boot-cli-(\d+\.\d+\.\d+)
+  name: spring-boot-cli
   version: $1
 - match: jvmkill-(\d+\.\d+\.\d+)
   name: jvmkill
@@ -259,6 +264,15 @@ dependencies:
   version: 4.0.23
   uri: https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-4.0.23.zip
   sha256: 7089dd7a1e84adc814d616f5ec2f7d7dac2044a0a0457f3341b3b92d30204229
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+# Spring Boot CLI versions
+- name: spring-boot-cli
+  version: 2.7.18
+  uri: https://repo1.maven.org/maven2/org/springframework/boot/spring-boot-cli/2.7.18/spring-boot-cli-2.7.18-bin.tar.gz
+  sha256: e35d1ee2c6ddc5c97a3eb305297d0e8aad328c3d87ab3c62b7cfb42de04d8720
   cf_stacks:
   - cflinuxfs4
   - cflinuxfs3
