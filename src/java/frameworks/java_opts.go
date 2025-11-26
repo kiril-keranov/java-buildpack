@@ -101,10 +101,34 @@ func (j *JavaOptsFramework) loadConfig() (*JavaOptsConfig, error) {
 	// Check for JBP_CONFIG_JAVA_OPTS override
 	configOverride := os.Getenv("JBP_CONFIG_JAVA_OPTS")
 	if configOverride != "" {
-		// Parse YAML from environment variable
-		if err := yaml.Unmarshal([]byte(configOverride), config); err != nil {
+		// First, parse the outer YAML string (handles single-quoted format like '{...}')
+		var yamlContent interface{}
+		if err := yaml.Unmarshal([]byte(configOverride), &yamlContent); err != nil {
 			return nil, fmt.Errorf("failed to parse JBP_CONFIG_JAVA_OPTS: %w", err)
 		}
+
+		// If the result is a string, parse it again as YAML (double-encoded scenario)
+		var configData []byte
+		switch v := yamlContent.(type) {
+		case string:
+			// It's a YAML string literal - parse the content
+			configData = []byte(v)
+		case map[interface{}]interface{}:
+			// It's already a parsed YAML structure - marshal it back to bytes
+			var err error
+			configData, err = yaml.Marshal(v)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal config map: %w", err)
+			}
+		default:
+			return nil, fmt.Errorf("unexpected YAML type: %T", v)
+		}
+
+		// Parse into JavaOptsConfig
+		if err := yaml.Unmarshal(configData, config); err != nil {
+			return nil, fmt.Errorf("failed to parse JBP_CONFIG_JAVA_OPTS structure: %w", err)
+		}
+
 		return config, nil
 	}
 

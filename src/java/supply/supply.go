@@ -180,6 +180,7 @@ func (s *Supplier) installFrameworks() error {
 	// Development Tools (Priority 1)
 	registry.Register(frameworks.NewDebugFramework(ctx))
 	registry.Register(frameworks.NewJmxFramework(ctx))
+	registry.Register(frameworks.NewJavaOptsFramework(ctx))
 
 	// APM Agents (Priority 2)
 	registry.Register(frameworks.NewAzureApplicationInsightsAgentFramework(ctx))
