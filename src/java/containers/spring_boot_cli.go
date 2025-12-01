@@ -92,6 +92,18 @@ func (s *SpringBootCLIContainer) Supply() error {
 
 	s.context.Log.Info("Installed Spring Boot CLI version %s", dep.Version)
 
+	// Write profile.d script to set SPRING_BOOT_CLI_HOME at runtime
+	// At runtime, CF sets $DEPS_DIR (e.g., /home/vcap/deps) and makes dependencies available at $DEPS_DIR/<idx>/
+	depsIdx := s.context.Stager.DepsIdx()
+	envContent := fmt.Sprintf(`export SPRING_BOOT_CLI_HOME=$DEPS_DIR/%s/spring-boot-cli
+`, depsIdx)
+
+	if err := s.context.Stager.WriteProfileD("spring-boot-cli.sh", envContent); err != nil {
+		s.context.Log.Warning("Could not write spring-boot-cli.sh profile.d script: %s", err.Error())
+	} else {
+		s.context.Log.Debug("Created profile.d script: spring-boot-cli.sh")
+	}
+
 	return nil
 }
 
@@ -117,8 +129,9 @@ func (s *SpringBootCLIContainer) Finalize() error {
 // Release returns the Spring Boot CLI startup command
 func (s *SpringBootCLIContainer) Release() (string, error) {
 	buildDir := s.context.Stager.BuildDir()
-	depsDir := s.context.Stager.DepDir()
-	springBootCLIDir := filepath.Join(depsDir, "spring-boot-cli")
+
+	// Use environment variable set by profile.d script (created during Supply)
+	springBootCLIDir := "$SPRING_BOOT_CLI_HOME"
 
 	// Build classpath from additional libraries and root libraries
 	var classpathParts []string
@@ -126,13 +139,13 @@ func (s *SpringBootCLIContainer) Release() (string, error) {
 	// Add additional libraries (if any)
 	additionalLibs := filepath.Join(buildDir, ".additional_libs")
 	if info, err := os.Stat(additionalLibs); err == nil && info.IsDir() {
-		classpathParts = append(classpathParts, additionalLibs+"/*")
+		classpathParts = append(classpathParts, ".additional_libs/*")
 	}
 
 	// Add root libraries (lib/ directory)
 	rootLibs := filepath.Join(buildDir, "lib")
 	if info, err := os.Stat(rootLibs); err == nil && info.IsDir() {
-		classpathParts = append(classpathParts, rootLibs+"/*")
+		classpathParts = append(classpathParts, "lib/*")
 	}
 
 	classpath := ""
@@ -151,7 +164,7 @@ func (s *SpringBootCLIContainer) Release() (string, error) {
 	}
 
 	// Build the spring run command
-	springBin := filepath.Join(springBootCLIDir, "bin", "spring")
+	springBin := fmt.Sprintf("%s/bin/spring", springBootCLIDir)
 
 	var cmdParts []string
 	cmdParts = append(cmdParts, springBin, "run")

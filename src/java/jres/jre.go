@@ -178,9 +178,11 @@ func SetupJavaHome(ctx *Context, javaHome string) error {
 
 	// Look for jdk-* or jre-* subdirectory
 	var actualJavaHome string
+	var subdirectory string
 	for _, entry := range entries {
 		if entry.IsDir() && (strings.HasPrefix(entry.Name(), "jdk") || strings.HasPrefix(entry.Name(), "jre")) {
 			actualJavaHome = filepath.Join(javaHome, entry.Name())
+			subdirectory = entry.Name()
 			break
 		}
 	}
@@ -188,24 +190,37 @@ func SetupJavaHome(ctx *Context, javaHome string) error {
 	// If no subdirectory found, use the javaHome directly
 	if actualJavaHome == "" {
 		actualJavaHome = javaHome
+		subdirectory = ""
 	}
 
-	// Write environment variables to profile.d
+	// Construct runtime path for profile.d script using $DEPS_DIR
+	// At runtime, CF sets $DEPS_DIR (e.g., /home/vcap/deps) and makes dependencies available at $DEPS_DIR/<idx>/
+	// The javaHome parameter is something like /tmp/app/.cloudfoundry/0/jre (staging time)
+	// We need to construct $DEPS_DIR/0/jre/<subdirectory> (runtime)
+	depsIdx := ctx.Stager.DepsIdx()
+	var runtimeJavaHome string
+	if subdirectory != "" {
+		runtimeJavaHome = fmt.Sprintf("$DEPS_DIR/%s/jre/%s", depsIdx, subdirectory)
+	} else {
+		runtimeJavaHome = fmt.Sprintf("$DEPS_DIR/%s/jre", depsIdx)
+	}
+
+	// Write environment variables to profile.d using runtime $HOME path
 	envContent := fmt.Sprintf(`export JAVA_HOME=%s
 export JRE_HOME=%s
 export PATH=$JAVA_HOME/bin:$PATH
-`, actualJavaHome, actualJavaHome)
+`, runtimeJavaHome, runtimeJavaHome)
 
 	if err := ctx.Stager.WriteProfileD("java.sh", envContent); err != nil {
 		return fmt.Errorf("failed to write java.sh: %w", err)
 	}
 
-	// Also set for current process
+	// Also set for current process (use absolute path for staging time)
 	os.Setenv("JAVA_HOME", actualJavaHome)
 	os.Setenv("JRE_HOME", actualJavaHome)
 	os.Setenv("PATH", filepath.Join(actualJavaHome, "bin")+":"+os.Getenv("PATH"))
 
-	ctx.Log.Info("Set JAVA_HOME to %s", actualJavaHome)
+	ctx.Log.Info("Set JAVA_HOME to %s (runtime: %s)", actualJavaHome, runtimeJavaHome)
 
 	return nil
 }
@@ -239,23 +254,32 @@ func DetermineJavaVersion(javaHome string) (int, error) {
 	return 17, nil
 }
 
-// WriteJavaOpts writes JAVA_OPTS to an environment file
+// WriteJavaOpts writes JAVA_OPTS to a profile.d script for runtime export
 func WriteJavaOpts(ctx *Context, opts string) error {
-	envFile := filepath.Join(ctx.Stager.DepDir(), "env", "JAVA_OPTS")
-	if err := os.MkdirAll(filepath.Dir(envFile), 0755); err != nil {
-		return fmt.Errorf("failed to create env directory: %w", err)
+	profileDir := filepath.Join(ctx.Stager.BuildDir(), ".profile.d")
+	if err := os.MkdirAll(profileDir, 0755); err != nil {
+		return fmt.Errorf("failed to create .profile.d directory: %w", err)
 	}
+
+	profileScript := filepath.Join(profileDir, "java_opts.sh")
 
 	// Append to existing JAVA_OPTS if file exists
-	var content string
-	if existing, err := os.ReadFile(envFile); err == nil {
-		content = string(existing) + " " + opts
+	var scriptContent string
+	if existing, err := os.ReadFile(profileScript); err == nil {
+		// File exists - extract current JAVA_OPTS value and append
+		scriptContent = string(existing)
+		// Remove the trailing newline if present
+		scriptContent = strings.TrimSuffix(scriptContent, "\n")
+		// Append new opts to the export line
+		scriptContent = strings.Replace(scriptContent, "${JAVA_OPTS:-}", "${JAVA_OPTS:-} "+opts, 1)
+		scriptContent += "\n"
 	} else {
-		content = opts
+		// Create new profile.d script with export statement
+		scriptContent = fmt.Sprintf("export JAVA_OPTS=\"${JAVA_OPTS:-%s}\"\n", opts)
 	}
 
-	if err := os.WriteFile(envFile, []byte(content), 0644); err != nil {
-		return fmt.Errorf("failed to write JAVA_OPTS: %w", err)
+	if err := os.WriteFile(profileScript, []byte(scriptContent), 0755); err != nil {
+		return fmt.Errorf("failed to write profile.d/java_opts.sh: %w", err)
 	}
 
 	return nil

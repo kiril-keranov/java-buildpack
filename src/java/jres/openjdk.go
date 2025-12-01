@@ -79,6 +79,14 @@ func (o *OpenJDKJRE) Supply() error {
 		return fmt.Errorf("failed to set up JAVA_HOME: %w", err)
 	}
 
+	// Create profile.d script to export JAVA_HOME at runtime
+	// This is needed for containers like DistZip that use startup scripts expecting $JAVA_HOME
+	if err := o.writeProfileDScript(); err != nil {
+		o.ctx.Log.Warning("Could not write java.sh profile.d script: %s", err.Error())
+	} else {
+		o.ctx.Log.Debug("Created profile.d script: java.sh")
+	}
+
 	// Determine Java major version
 	javaMajorVersion, err := DetermineJavaVersion(javaHome)
 	if err != nil {
@@ -193,4 +201,35 @@ func (o *OpenJDKJRE) findJavaHome() (string, error) {
 	}
 
 	return "", fmt.Errorf("could not find valid JAVA_HOME in %s", o.jreDir)
+}
+
+// writeProfileDScript creates a profile.d script that exports JAVA_HOME at runtime
+// This is needed for containers like DistZip that use startup scripts expecting $JAVA_HOME
+func (o *OpenJDKJRE) writeProfileDScript() error {
+	// Determine the relative path from jreDir to javaHome
+	relPath, err := filepath.Rel(o.jreDir, o.javaHome)
+	if err != nil {
+		return fmt.Errorf("failed to compute relative path: %w", err)
+	}
+
+	// Build the JAVA_HOME path using $DEPS_DIR environment variable
+	// This allows the path to work at runtime when the app is staged
+	var javaHomePath string
+	if relPath == "." {
+		// JAVA_HOME is directly at jreDir
+		javaHomePath = "$DEPS_DIR/0/jre"
+	} else {
+		// JAVA_HOME is in a subdirectory (e.g., jdk-17.0.13)
+		javaHomePath = fmt.Sprintf("$DEPS_DIR/0/jre/%s", relPath)
+	}
+
+	// Create the profile.d script content
+	envContent := fmt.Sprintf("export JAVA_HOME=%s\n", javaHomePath)
+
+	// Write the profile.d script
+	if err := o.ctx.Stager.WriteProfileD("java.sh", envContent); err != nil {
+		return fmt.Errorf("failed to write profile.d script: %w", err)
+	}
+
+	return nil
 }

@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/cloudfoundry/java-buildpack/src/java/jres"
+	"github.com/cloudfoundry/libbuildpack"
 )
 
 // TomcatContainer handles servlet/WAR applications
@@ -84,20 +87,57 @@ func (t *TomcatContainer) Supply() error {
 	// Fallback to default version if we couldn't determine Java version
 	if dep.Version == "" {
 		dep, err = t.context.Manifest.DefaultVersion("tomcat")
-	if err != nil {
-		t.context.Log.Warning("Unable to determine default Tomcat version")
+		if err != nil {
+			t.context.Log.Warning("Unable to determine default Tomcat version")
 			// Final fallback to a known version
-		dep.Name = "tomcat"
-		dep.Version = "9.0.98"
+			dep.Name = "tomcat"
+			dep.Version = "9.0.98"
 		}
 	}
 
+	// Install Tomcat
 	tomcatDir := filepath.Join(t.context.Stager.DepDir(), "tomcat")
 	if err := t.context.Installer.InstallDependency(dep, tomcatDir); err != nil {
 		return fmt.Errorf("failed to install Tomcat: %w", err)
 	}
 
 	t.context.Log.Info("Installed Tomcat version %s", dep.Version)
+
+	// Find the actual Tomcat home (handle nested directories from tar extraction)
+	// Apache Tomcat tarballs extract to apache-tomcat-X.Y.Z/ subdirectory
+	tomcatHome, err := t.findTomcatHome(tomcatDir)
+	if err != nil {
+		return fmt.Errorf("failed to find Tomcat home: %w", err)
+	}
+	t.context.Log.Debug("Found Tomcat home at: %s", tomcatHome)
+
+	// Write profile.d script to set CATALINA_HOME and CATALINA_BASE at runtime
+	// At runtime, CF makes dependencies available at $DEPS_DIR/<idx>/
+	// We need to point to the actual nested directory (e.g., apache-tomcat-X.Y.Z/)
+	depsIdx := t.context.Stager.DepsIdx()
+
+	// Get relative path from tomcatDir to tomcatHome for runtime
+	relPath, err := filepath.Rel(tomcatDir, tomcatHome)
+	if err != nil || relPath == "." {
+		relPath = ""
+	}
+
+	var tomcatPath string
+	if relPath == "" {
+		tomcatPath = fmt.Sprintf("$DEPS_DIR/%s/tomcat", depsIdx)
+	} else {
+		tomcatPath = fmt.Sprintf("$DEPS_DIR/%s/tomcat/%s", depsIdx, relPath)
+	}
+
+	envContent := fmt.Sprintf(`export CATALINA_HOME=%s
+export CATALINA_BASE=%s
+`, tomcatPath, tomcatPath)
+
+	if err := t.context.Stager.WriteProfileD("tomcat.sh", envContent); err != nil {
+		t.context.Log.Warning("Could not write tomcat.sh profile.d script: %s", err.Error())
+	} else {
+		t.context.Log.Debug("Created profile.d script: tomcat.sh")
+	}
 
 	// Install Tomcat support libraries
 	if err := t.installTomcatSupport(); err != nil {
@@ -147,6 +187,7 @@ func (t *TomcatContainer) Finalize() error {
 		// For now, we'll assume symlinks or direct access
 	}
 
+	// JVMKill agent is configured by JRE component in JAVA_OPTS
 	// CATALINA_OPTS configuration will be added in future enhancements
 
 	// TODO: Add Tomcat support JAR to classpath
@@ -155,14 +196,43 @@ func (t *TomcatContainer) Finalize() error {
 	return nil
 }
 
-// Release returns the Tomcat startup command
-func (t *TomcatContainer) Release() (string, error) {
-	tomcatDir := filepath.Join(t.context.Stager.DepDir(), "tomcat")
-	catalinaHome := tomcatDir
-	catalinaBase := tomcatDir
+// findTomcatHome finds the actual Tomcat home directory
+// Apache Tomcat tarballs extract to apache-tomcat-X.Y.Z/ subdirectories
+func (t *TomcatContainer) findTomcatHome(tomcatDir string) (string, error) {
+	entries, err := os.ReadDir(tomcatDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to read Tomcat directory: %w", err)
+	}
 
-	cmd := fmt.Sprintf("CATALINA_HOME=%s CATALINA_BASE=%s %s/bin/catalina.sh run",
-		catalinaHome, catalinaBase, tomcatDir)
+	// Look for apache-tomcat-* subdirectory
+	for _, entry := range entries {
+		if entry.IsDir() {
+			name := entry.Name()
+			// Check for apache-tomcat-* directory pattern
+			if len(name) > 13 && name[:13] == "apache-tomcat" {
+				path := filepath.Join(tomcatDir, name)
+				// Verify it has bin/catalina.sh
+				if _, err := os.Stat(filepath.Join(path, "bin", "catalina.sh")); err == nil {
+					return path, nil
+				}
+			}
+		}
+	}
+
+	// If no subdirectory found, check if tomcatDir itself is valid
+	if _, err := os.Stat(filepath.Join(tomcatDir, "bin", "catalina.sh")); err == nil {
+		return tomcatDir, nil
+	}
+
+	return "", fmt.Errorf("could not find valid Tomcat home in %s", tomcatDir)
+}
+
+// Release returns the Tomcat startup command
+// Uses $CATALINA_HOME which is set by profile.d/tomcat.sh at runtime
+func (t *TomcatContainer) Release() (string, error) {
+	// Use $CATALINA_HOME environment variable set by profile.d script
+	// Profile.d scripts run BEFORE the release command at runtime (same as $JAVA_HOME)
+	cmd := "$CATALINA_HOME/bin/catalina.sh run"
 
 	return cmd, nil
 }
