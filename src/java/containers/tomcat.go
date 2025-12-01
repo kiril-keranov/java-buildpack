@@ -64,10 +64,7 @@ func (t *TomcatContainer) Supply() error {
 		t.context.Log.Warning("Could not install Tomcat support: %s", err.Error())
 	}
 
-	// Install JVMKill agent
-	if err := t.installJVMKillAgent(); err != nil {
-		t.context.Log.Warning("Could not install JVMKill agent: %s", err.Error())
-	}
+	// JVMKill agent is installed and configured by JRE component
 
 	return nil
 }
@@ -85,22 +82,6 @@ func (t *TomcatContainer) installTomcatSupport() error {
 	}
 
 	t.context.Log.Info("Installed Tomcat Lifecycle Support version %s", dep.Version)
-	return nil
-}
-
-// installJVMKillAgent installs the JVMKill agent
-func (t *TomcatContainer) installJVMKillAgent() error {
-	dep, err := t.context.Manifest.DefaultVersion("jvmkill")
-	if err != nil {
-		return err
-	}
-
-	jvmkillPath := filepath.Join(t.context.Stager.DepDir(), "jvmkill")
-	if err := t.context.Installer.InstallDependency(dep, jvmkillPath); err != nil {
-		return fmt.Errorf("failed to install JVMKill: %w", err)
-	}
-
-	t.context.Log.Info("Installed JVMKill agent version %s", dep.Version)
 	return nil
 }
 
@@ -126,17 +107,7 @@ func (t *TomcatContainer) Finalize() error {
 		// For now, we'll assume symlinks or direct access
 	}
 
-	// Configure CATALINA_OPTS
-	catalinaOpts := []string{
-		"-Djava.io.tmpdir=$TMPDIR",
-		"-XX:+ExitOnOutOfMemoryError",
-	}
-
-	// Add JVMKill agent if available
-	jvmkillSO := filepath.Join(t.context.Stager.DepDir(), "jvmkill", "jvmkill.so")
-	if _, err := os.Stat(jvmkillSO); err == nil {
-		catalinaOpts = append(catalinaOpts, fmt.Sprintf("-agentpath:%s", jvmkillSO))
-	}
+	// CATALINA_OPTS configuration will be added in future enhancements
 
 	// TODO: Add Tomcat support JAR to classpath
 	// TODO: Configure server.xml with appropriate settings

@@ -144,7 +144,13 @@ func (j *JVMKillAgent) Finalize() error {
 	}
 
 	j.ctx.Log.Info("Configuring JVMKill Agent")
-	j.ctx.Log.Debug("JVMKill agent path: %s", j.agentPath)
+	j.ctx.Log.Debug("JVMKill agent staging path: %s", j.agentPath)
+
+	// Convert absolute staging path to runtime-relative path
+	// Staging path: /tmp/contents.../deps/0/jre/bin/jvmkill-1.16.0.so
+	// Runtime path: $DEPS_DIR/0/jre/bin/jvmkill-1.16.0.so
+	runtimeAgentPath := j.convertToRuntimePath(j.agentPath)
+	j.ctx.Log.Debug("JVMKill agent runtime path: %s", runtimeAgentPath)
 
 	// Check if there's a volume service for heap dumps
 	heapDumpPath := j.getHeapDumpPath()
@@ -153,10 +159,10 @@ func (j *JVMKillAgent) Finalize() error {
 	// Format: -agentpath:/path/to/jvmkill.so=printHeapHistogram=1,heapDumpPath=/path
 	var agentOpt string
 	if heapDumpPath != "" {
-		agentOpt = fmt.Sprintf("-agentpath:%s=printHeapHistogram=1,heapDumpPath=%s", j.agentPath, heapDumpPath)
+		agentOpt = fmt.Sprintf("-agentpath:%s=printHeapHistogram=1,heapDumpPath=%s", runtimeAgentPath, heapDumpPath)
 		j.ctx.Log.Info("Write terminal heap dumps to %s", heapDumpPath)
 	} else {
-		agentOpt = fmt.Sprintf("-agentpath:%s=printHeapHistogram=1", j.agentPath)
+		agentOpt = fmt.Sprintf("-agentpath:%s=printHeapHistogram=1", runtimeAgentPath)
 	}
 
 	j.ctx.Log.Debug("Adding to JAVA_OPTS: %s", agentOpt)
@@ -169,6 +175,22 @@ func (j *JVMKillAgent) Finalize() error {
 	j.ctx.Log.Info("JVMKill Agent added to JAVA_OPTS")
 
 	return nil
+}
+
+// convertToRuntimePath converts absolute staging path to runtime absolute path
+// Example: /tmp/contents.../deps/0/jre/bin/jvmkill-1.16.0.so -> /home/vcap/deps/0/jre/bin/jvmkill-1.16.0.so
+// Note: We use absolute path instead of $DEPS_DIR because startup scripts run before .profile.d scripts
+// are sourced, so $DEPS_DIR is not yet available at runtime.
+func (j *JVMKillAgent) convertToRuntimePath(stagingPath string) string {
+	// Extract filename and build runtime path
+	// We know the structure: <staging-path>/deps/<idx>/jre/bin/jvmkill-VERSION.so
+	// Runtime path: /home/vcap/deps/<idx>/jre/bin/jvmkill-VERSION.so
+
+	depsIdx := j.ctx.Stager.DepsIdx()
+	filename := filepath.Base(stagingPath)
+
+	// Build absolute runtime path (Cloud Foundry standard location)
+	return fmt.Sprintf("/home/vcap/deps/%s/jre/bin/%s", depsIdx, filename)
 }
 
 // getHeapDumpPath checks for volume service with heap-dump tag and returns path

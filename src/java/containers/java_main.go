@@ -107,27 +107,9 @@ func (j *JavaMainContainer) Supply() error {
 	// 2. Set up classpath
 	// 3. Install support utilities
 
-	// Install JVMKill agent
-	if err := j.installJVMKillAgent(); err != nil {
-		j.context.Log.Warning("Could not install JVMKill agent: %s", err.Error())
-	}
+	// Note: JVMKill agent is installed by the JRE component (src/java/jres/jvmkill.go)
+	// No need to install it here to avoid duplication
 
-	return nil
-}
-
-// installJVMKillAgent installs the JVMKill agent
-func (j *JavaMainContainer) installJVMKillAgent() error {
-	dep, err := j.context.Manifest.DefaultVersion("jvmkill")
-	if err != nil {
-		return err
-	}
-
-	jvmkillPath := filepath.Join(j.context.Stager.DepDir(), "jvmkill")
-	if err := j.context.Installer.InstallDependency(dep, jvmkillPath); err != nil {
-		return fmt.Errorf("failed to install JVMKill: %w", err)
-	}
-
-	j.context.Log.Info("Installed JVMKill agent version %s", dep.Version)
 	return nil
 }
 
@@ -146,22 +128,8 @@ func (j *JavaMainContainer) Finalize() error {
 		return fmt.Errorf("failed to write CLASSPATH: %w", err)
 	}
 
-	// Configure JAVA_OPTS
-	javaOpts := []string{
-		"-Djava.io.tmpdir=$TMPDIR",
-		"-XX:+ExitOnOutOfMemoryError",
-	}
-
-	// Add JVMKill agent if available
-	jvmkillSO := filepath.Join(j.context.Stager.DepDir(), "jvmkill", "jvmkill.so")
-	if _, err := os.Stat(jvmkillSO); err == nil {
-		javaOpts = append(javaOpts, fmt.Sprintf("-agentpath:%s", jvmkillSO))
-	}
-
-	// Write JAVA_OPTS
-	if err := j.context.Stager.WriteEnvFile("JAVA_OPTS", strings.Join(javaOpts, " ")); err != nil {
-		return fmt.Errorf("failed to write JAVA_OPTS: %w", err)
-	}
+	// Note: JAVA_OPTS (including JVMKill agent) is configured by the JRE component
+	// via profile.d/java_opts.sh. No need to configure it here to avoid duplication.
 
 	return nil
 }

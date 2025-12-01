@@ -125,11 +125,6 @@ func (d *DistZipContainer) Supply() error {
 		d.context.Log.Warning("Could not make scripts executable: %s", err.Error())
 	}
 
-	// Install JVMKill agent
-	if err := d.installJVMKillAgent(); err != nil {
-		d.context.Log.Warning("Could not install JVMKill agent: %s", err.Error())
-	}
-
 	return nil
 }
 
@@ -165,22 +160,6 @@ func (d *DistZipContainer) makeScriptsExecutable() error {
 		}
 	}
 
-	return nil
-}
-
-// installJVMKillAgent installs the JVMKill agent
-func (d *DistZipContainer) installJVMKillAgent() error {
-	dep, err := d.context.Manifest.DefaultVersion("jvmkill")
-	if err != nil {
-		return err
-	}
-
-	jvmkillPath := filepath.Join(d.context.Stager.DepDir(), "jvmkill")
-	if err := d.context.Installer.InstallDependency(dep, jvmkillPath); err != nil {
-		return fmt.Errorf("failed to install JVMKill: %w", err)
-	}
-
-	d.context.Log.Info("Installed JVMKill agent version %s", dep.Version)
 	return nil
 }
 
@@ -224,15 +203,10 @@ export PATH=$DIST_ZIP_BIN:$PATH
 	}
 
 	// Configure JAVA_OPTS to be picked up by startup scripts
+	// Note: JVMKill agent is configured by the JRE component via .profile.d/java_opts.sh
 	javaOpts := []string{
 		"-Djava.io.tmpdir=$TMPDIR",
 		"-XX:+ExitOnOutOfMemoryError",
-	}
-
-	// Add JVMKill agent if available
-	jvmkillSO := filepath.Join(d.context.Stager.DepDir(), "jvmkill", "jvmkill.so")
-	if _, err := os.Stat(jvmkillSO); err == nil {
-		javaOpts = append(javaOpts, fmt.Sprintf("-agentpath:%s", jvmkillSO))
 	}
 
 	// Most distZip scripts respect JAVA_OPTS environment variable

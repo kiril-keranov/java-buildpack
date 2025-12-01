@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 // GroovyContainer handles Groovy script applications
@@ -70,27 +69,9 @@ func (g *GroovyContainer) Supply() error {
 		g.context.Log.Warning("Could not link groovy binary: %s", err.Error())
 	}
 
-	// Install JVMKill agent
-	if err := g.installJVMKillAgent(); err != nil {
-		g.context.Log.Warning("Could not install JVMKill agent: %s", err.Error())
-	}
+	// Note: JVMKill agent is installed by the JRE component (src/java/jres/jvmkill.go)
+	// No need to install it here to avoid duplication
 
-	return nil
-}
-
-// installJVMKillAgent installs the JVMKill agent
-func (g *GroovyContainer) installJVMKillAgent() error {
-	dep, err := g.context.Manifest.DefaultVersion("jvmkill")
-	if err != nil {
-		return err
-	}
-
-	jvmkillPath := filepath.Join(g.context.Stager.DepDir(), "jvmkill")
-	if err := g.context.Installer.InstallDependency(dep, jvmkillPath); err != nil {
-		return fmt.Errorf("failed to install JVMKill: %w", err)
-	}
-
-	g.context.Log.Info("Installed JVMKill agent version %s", dep.Version)
 	return nil
 }
 
@@ -98,22 +79,8 @@ func (g *GroovyContainer) installJVMKillAgent() error {
 func (g *GroovyContainer) Finalize() error {
 	g.context.Log.BeginStep("Finalizing Groovy")
 
-	// Configure JAVA_OPTS for Groovy
-	javaOpts := []string{
-		"-Djava.io.tmpdir=$TMPDIR",
-		"-XX:+ExitOnOutOfMemoryError",
-	}
-
-	// Add JVMKill agent if available
-	jvmkillSO := filepath.Join(g.context.Stager.DepDir(), "jvmkill", "jvmkill.so")
-	if _, err := os.Stat(jvmkillSO); err == nil {
-		javaOpts = append(javaOpts, fmt.Sprintf("-agentpath:%s", jvmkillSO))
-	}
-
-	// Write JAVA_OPTS
-	if err := g.context.Stager.WriteEnvFile("JAVA_OPTS", strings.Join(javaOpts, " ")); err != nil {
-		return fmt.Errorf("failed to write JAVA_OPTS: %w", err)
-	}
+	// Note: JAVA_OPTS (including JVMKill agent) is configured by the JRE component
+	// via profile.d/java_opts.sh. No need to configure it here to avoid duplication.
 
 	return nil
 }
