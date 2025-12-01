@@ -43,13 +43,53 @@ func (t *TomcatContainer) Detect() (string, error) {
 func (t *TomcatContainer) Supply() error {
 	t.context.Log.BeginStep("Supplying Tomcat")
 
-	// Install Tomcat
-	dep, err := t.context.Manifest.DefaultVersion("tomcat")
+	// Determine Java version to select appropriate Tomcat version
+	// Tomcat 10.x requires Java 11+, Tomcat 9.x supports Java 8-22
+	javaHome := os.Getenv("JAVA_HOME")
+	var dep libbuildpack.Dependency
+	var err error
+
+	if javaHome != "" {
+		javaMajorVersion, versionErr := jres.DetermineJavaVersion(javaHome)
+		if versionErr == nil {
+			t.context.Log.Debug("Detected Java major version: %d", javaMajorVersion)
+
+			// Select Tomcat version pattern based on Java version
+			var versionPattern string
+			if javaMajorVersion >= 11 {
+				// Java 11+: Use Tomcat 10.x (Jakarta EE 9+)
+				versionPattern = "10.x"
+				t.context.Log.Info("Using Tomcat 10.x for Java %d", javaMajorVersion)
+			} else {
+				// Java 8-10: Use Tomcat 9.x (Java EE 8)
+				versionPattern = "9.x"
+				t.context.Log.Info("Using Tomcat 9.x for Java %d", javaMajorVersion)
+			}
+
+			// Resolve the version pattern to actual version using libbuildpack
+			allVersions := t.context.Manifest.AllDependencyVersions("tomcat")
+			resolvedVersion, err := libbuildpack.FindMatchingVersion(versionPattern, allVersions)
+			if err == nil {
+				dep.Name = "tomcat"
+				dep.Version = resolvedVersion
+				t.context.Log.Debug("Resolved Tomcat version pattern '%s' to %s", versionPattern, resolvedVersion)
+			} else {
+				t.context.Log.Warning("Unable to resolve Tomcat version pattern '%s': %s", versionPattern, err.Error())
+			}
+		} else {
+			t.context.Log.Warning("Unable to determine Java version: %s", versionErr.Error())
+		}
+	}
+
+	// Fallback to default version if we couldn't determine Java version
+	if dep.Version == "" {
+		dep, err = t.context.Manifest.DefaultVersion("tomcat")
 	if err != nil {
 		t.context.Log.Warning("Unable to determine default Tomcat version")
-		// Fallback to a known version
+			// Final fallback to a known version
 		dep.Name = "tomcat"
 		dep.Version = "9.0.98"
+		}
 	}
 
 	tomcatDir := filepath.Join(t.context.Stager.DepDir(), "tomcat")
