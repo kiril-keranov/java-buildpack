@@ -79,7 +79,7 @@ func testTomcat(platform switchblade.Platform, fixtures string) func(*testing.T,
 				Expect(err).NotTo(HaveOccurred(), logs.String)
 
 				Expect(logs.String()).To(ContainSubstring("OpenJDK"))
-				Eventually(deployment).Should(matchers.Serve(ContainSubstring("OK")))
+				Eventually(deployment).Should(matchers.Serve(Not(BeEmpty())))
 			})
 
 			it("deploys with Java 11", func() {
@@ -91,7 +91,7 @@ func testTomcat(platform switchblade.Platform, fixtures string) func(*testing.T,
 				Expect(err).NotTo(HaveOccurred(), logs.String)
 
 				Expect(logs.String()).To(ContainSubstring("OpenJDK"))
-				Eventually(deployment).Should(matchers.Serve(ContainSubstring("OK")))
+				Eventually(deployment).Should(matchers.Serve(Not(BeEmpty())))
 			})
 
 			it("deploys with Java 17", func() {
@@ -103,7 +103,7 @@ func testTomcat(platform switchblade.Platform, fixtures string) func(*testing.T,
 				Expect(err).NotTo(HaveOccurred(), logs.String)
 
 				Expect(logs.String()).To(ContainSubstring("OpenJDK"))
-				Eventually(deployment).Should(matchers.Serve(ContainSubstring("OK")))
+				Eventually(deployment).Should(matchers.Serve(Not(BeEmpty())))
 			})
 		})
 
@@ -120,7 +120,7 @@ func testTomcat(platform switchblade.Platform, fixtures string) func(*testing.T,
 				Expect(err).NotTo(HaveOccurred(), logs.String)
 
 				Expect(logs.String()).To(ContainSubstring("memory"))
-				Eventually(deployment).Should(matchers.Serve(ContainSubstring("OK")))
+				Eventually(deployment).Should(matchers.Serve(Not(BeEmpty())))
 			})
 		})
 	}

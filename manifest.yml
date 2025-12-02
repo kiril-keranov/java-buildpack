@@ -26,6 +26,8 @@ default_versions:
   version: 21.x
 - name: tomcat
   version: 10.1.x
+- name: tomcat-lifecycle-support
+  version: 3.x
 - name: groovy
   version: 4.0.x
 - name: spring-boot-cli
@@ -426,24 +428,31 @@ dependencies:
   cf_stacks:
   - cflinuxfs4
 
-# NOTE: Tomcat support JARs are currently unavailable from the CF buildpack repository
-# These will be added when new versions are published or alternative sources are found
-# Commenting out for now to allow packaging to succeed:
-#
-# - name: tomcat-lifecycle-support
-#   version: 3.3.0
-#   uri: https://java-buildpack.cloudfoundry.org/tomcat-lifecycle-support/tomcat-lifecycle-support-3.3.0.jar
-#   sha256: 00daef2fa841ae910c9adbc777c26a51a146319467836f5b6d9f9064e99b1fa7
-#
-# - name: tomcat-logging-support
-#   version: 3.3.0
-#   uri: https://java-buildpack.cloudfoundry.org/tomcat-logging-support/tomcat-logging-support-3.3.0.jar
-#   sha256: 2393e85045a07b4e9543cd09cb5e1918494216733b450fafd10647540653771e
-#
-# - name: tomcat-access-logging-support
-#   version: 3.3.0
-#   uri: https://java-buildpack.cloudfoundry.org/tomcat-access-logging-support/tomcat-access-logging-support-3.3.0.jar
-#   sha256: 17f1bcbd9b193862605d06e9d126961e8a9d7d21dd58dfc54e5ca13e31316af5
+# NOTE: Tomcat support JARs are available from Maven Central (org.cloudfoundry group)
+# Source: https://repo1.maven.org/maven2/org/cloudfoundry/
+- name: tomcat-lifecycle-support
+  version: 3.4.0
+  uri: https://repo1.maven.org/maven2/org/cloudfoundry/tomcat-lifecycle-support/3.4.0.RELEASE/tomcat-lifecycle-support-3.4.0.RELEASE.jar
+  sha256: 3861d32a91b58302fa936d6f84354e1874f71e59dd97b003efcc992a5a6f3c47
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+- name: tomcat-logging-support
+  version: 3.4.0
+  uri: https://repo1.maven.org/maven2/org/cloudfoundry/tomcat-logging-support/3.4.0.RELEASE/tomcat-logging-support-3.4.0.RELEASE.jar
+  sha256: 07de9efe8dda4c67dec6183ec1d59953abf1372cd71fe276fc4598739bd70667
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
+
+- name: tomcat-access-logging-support
+  version: 3.4.0
+  uri: https://repo1.maven.org/maven2/org/cloudfoundry/tomcat-access-logging-support/3.4.0.RELEASE/tomcat-access-logging-support-3.4.0.RELEASE.jar
+  sha256: b3452d5ffbf0652e0f44958a5cb306a961906280102e5fa1a15840d2ddb6bcc1
+  cf_stacks:
+  - cflinuxfs4
+  - cflinuxfs3
 
 # APM Agents
 # New Relic

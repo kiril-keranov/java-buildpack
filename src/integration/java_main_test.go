@@ -68,7 +68,7 @@ func testJavaMain(platform switchblade.Platform, fixtures string) func(*testing.
 						"BP_JAVA_VERSION":      "11",
 						"JBP_CONFIG_JAVA_MAIN": `{arguments: "--server.port=$PORT"}`,
 					}).
-					Execute(name, filepath.Join(fixtures, "integration_valid"))
+					Execute(name, filepath.Join(fixtures, "container_main"))
 				Expect(err).NotTo(HaveOccurred(), logs.String)
 
 				// Verify buildpack stages successfully with custom arguments

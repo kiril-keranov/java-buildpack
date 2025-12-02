@@ -151,12 +151,12 @@ export CATALINA_BASE=%s
 
 // installTomcatSupport installs Tomcat support libraries
 func (t *TomcatContainer) installTomcatSupport() error {
-	dep, err := t.context.Manifest.DefaultVersion("tomcat_lifecycle_support")
+	dep, err := t.context.Manifest.DefaultVersion("tomcat-lifecycle-support")
 	if err != nil {
 		return err
 	}
 
-	supportDir := filepath.Join(t.context.Stager.DepDir(), "tomcat_lifecycle_support")
+	supportDir := filepath.Join(t.context.Stager.DepDir(), "tomcat-lifecycle-support")
 	if err := t.context.Installer.InstallDependency(dep, supportDir); err != nil {
 		return fmt.Errorf("failed to install Tomcat support: %w", err)
 	}
