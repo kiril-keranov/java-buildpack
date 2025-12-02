@@ -77,10 +77,11 @@ func TestIntegration(t *testing.T) {
 	suite("Tomcat", testTomcat(platform, fixtures))
 	suite("SpringBoot", testSpringBoot(platform, fixtures))
 	suite("JavaMain", testJavaMain(platform, fixtures))
+	suite("DistZip", testDistZip(platform, fixtures))
+
 	suite("Groovy", testGroovy(platform, fixtures))
 	suite("Ratpack", testRatpack(platform, fixtures))
 	suite("Play", testPlay(platform, fixtures))
-	suite("DistZip", testDistZip(platform, fixtures))
 	suite("SpringBootCLI", testSpringBootCLI(platform, fixtures))
 
 	// Framework tests (APM agents, security providers, etc.)

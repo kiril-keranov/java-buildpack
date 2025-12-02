@@ -172,27 +172,108 @@ func (t *TomcatContainer) Finalize() error {
 	buildDir := t.context.Stager.BuildDir()
 	tomcatDir := filepath.Join(t.context.Stager.DepDir(), "tomcat")
 
-	// If we have an exploded WAR (WEB-INF directory), move it to Tomcat's webapps
+	// Find Tomcat home (may be in subdirectory like apache-tomcat-X.Y.Z)
+	tomcatHome, err := t.findTomcatHome(tomcatDir)
+	if err != nil {
+		return fmt.Errorf("failed to find Tomcat home during finalize: %w", err)
+	}
+
+	// Check if we have an exploded WAR (WEB-INF directory in BuildDir)
 	webInf := filepath.Join(buildDir, "WEB-INF")
 	if _, err := os.Stat(webInf); err == nil {
-		// Create ROOT webapp directory
-		rootApp := filepath.Join(tomcatDir, "webapps", "ROOT")
-		if err := os.MkdirAll(rootApp, 0755); err != nil {
-			return fmt.Errorf("failed to create ROOT webapp: %w", err)
+		// Configure Tomcat to serve the application from BuildDir
+		// This follows the immutable BuildDir pattern: application stays where deployed
+		t.context.Log.Info("Configuring Tomcat to serve exploded WAR from BuildDir")
+
+		// Create a custom context.xml file that points to BuildDir
+		// At runtime, $HOME will resolve to the application directory
+		if err := t.configureContextDocBase(tomcatHome); err != nil {
+			return fmt.Errorf("failed to configure Tomcat context: %w", err)
 		}
 
-		// Move WEB-INF and other content to ROOT
-		t.context.Log.Info("Deploying exploded WAR to Tomcat")
-		// TODO: In full implementation, use proper file moving
-		// For now, we'll assume symlinks or direct access
+		t.context.Log.Info("Tomcat configured to serve application from $HOME (BuildDir)")
+	}
+
+	// Configure Tomcat support JAR in common classpath
+	if err := t.configureTomcatSupport(tomcatHome); err != nil {
+		t.context.Log.Warning("Could not configure Tomcat support: %s", err.Error())
 	}
 
 	// JVMKill agent is configured by JRE component in JAVA_OPTS
-	// CATALINA_OPTS configuration will be added in future enhancements
 
-	// TODO: Add Tomcat support JAR to classpath
-	// TODO: Configure server.xml with appropriate settings
+	return nil
+}
 
+// configureContextDocBase creates a context configuration that points to BuildDir
+func (t *TomcatContainer) configureContextDocBase(tomcatHome string) error {
+	// Create conf/Catalina/localhost directory if it doesn't exist
+	contextDir := filepath.Join(tomcatHome, "conf", "Catalina", "localhost")
+	if err := os.MkdirAll(contextDir, 0755); err != nil {
+		return fmt.Errorf("failed to create context directory: %w", err)
+	}
+
+	// Create ROOT.xml context file
+	// This tells Tomcat to serve the ROOT webapp from BuildDir (the application directory)
+	// Tomcat supports ${propertyName} syntax for system properties in context.xml
+	contextFile := filepath.Join(contextDir, "ROOT.xml")
+	contextXML := `<?xml version="1.0" encoding="UTF-8"?>
+<Context docBase="${user.home}/app" reloadable="false">
+    <!-- Application served from BuildDir (/home/vcap/app), not moved to DepDir -->
+    <!-- At runtime: user.home system property = /home/vcap, so we use ${user.home}/app -->
+</Context>
+`
+
+	if err := os.WriteFile(contextFile, []byte(contextXML), 0644); err != nil {
+		return fmt.Errorf("failed to write context file: %w", err)
+	}
+
+	t.context.Log.Debug("Created Tomcat context configuration: %s", contextFile)
+	return nil
+}
+
+// configureTomcatSupport adds Tomcat support JAR to common classpath
+func (t *TomcatContainer) configureTomcatSupport(tomcatHome string) error {
+	supportDir := filepath.Join(t.context.Stager.DepDir(), "tomcat-lifecycle-support")
+
+	// Check if support was installed
+	if _, err := os.Stat(supportDir); os.IsNotExist(err) {
+		return nil // Support not installed, skip
+	}
+
+	// Find the support JAR
+	matches, err := filepath.Glob(filepath.Join(supportDir, "*.jar"))
+	if err != nil || len(matches) == 0 {
+		return fmt.Errorf("tomcat support JAR not found in %s", supportDir)
+	}
+
+	supportJar := matches[0]
+
+	// Create setenv.sh to add support JAR to classpath
+	// This follows Tomcat's standard configuration mechanism
+	binDir := filepath.Join(tomcatHome, "bin")
+	setenvFile := filepath.Join(binDir, "setenv.sh")
+
+	// Calculate runtime path to support JAR (relative to CATALINA_BASE)
+	// At runtime: $CATALINA_BASE = /home/vcap/deps/0/tomcat/...
+	// Support JAR is at: /home/vcap/deps/0/tomcat-lifecycle-support/...
+	relPath, err := filepath.Rel(tomcatHome, supportJar)
+	if err != nil {
+		// If we can't calculate relative path, use absolute reference
+		relPath = fmt.Sprintf("$CATALINA_BASE/../tomcat-lifecycle-support/%s", filepath.Base(supportJar))
+	} else {
+		relPath = fmt.Sprintf("$CATALINA_BASE/%s", relPath)
+	}
+
+	setenvContent := fmt.Sprintf(`#!/bin/bash
+# Add Tomcat Lifecycle Support to classpath
+export CLASSPATH="%s:$CLASSPATH"
+`, relPath)
+
+	if err := os.WriteFile(setenvFile, []byte(setenvContent), 0755); err != nil {
+		return fmt.Errorf("failed to write setenv.sh: %w", err)
+	}
+
+	t.context.Log.Debug("Configured Tomcat support JAR in setenv.sh")
 	return nil
 }
 

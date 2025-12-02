@@ -464,11 +464,11 @@ var _ = Describe("Container Registry", func() {
 				container.Detect()
 			})
 
-			It("sets CATALINA_HOME and CATALINA_BASE", func() {
+			It("returns Tomcat startup command using CATALINA_HOME", func() {
 				cmd, err := container.Release()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(cmd).To(ContainSubstring("CATALINA_HOME"))
-				Expect(cmd).To(ContainSubstring("CATALINA_BASE"))
+				Expect(cmd).To(ContainSubstring("catalina.sh run"))
 			})
 		})
 
@@ -645,12 +645,25 @@ var _ = Describe("Container Registry", func() {
 		BeforeEach(func() {
 			container = containers.NewTomcatContainer(ctx)
 			os.MkdirAll(filepath.Join(buildDir, "WEB-INF"), 0755)
+
+			// Create mock Tomcat directory structure that Finalize expects
+			tomcatDir := filepath.Join(depsDir, "0", "tomcat", "apache-tomcat-9.0.0")
+			os.MkdirAll(filepath.Join(tomcatDir, "bin"), 0755)
+			os.MkdirAll(filepath.Join(tomcatDir, "conf"), 0755)
+			// Create catalina.sh so findTomcatHome() can find it
+			os.WriteFile(filepath.Join(tomcatDir, "bin", "catalina.sh"), []byte("#!/bin/sh"), 0755)
+
 			container.Detect()
 		})
 
 		It("finalizes successfully", func() {
 			err := container.Finalize()
 			Expect(err).NotTo(HaveOccurred())
+
+			// Verify context configuration was created
+			tomcatDir := filepath.Join(depsDir, "0", "tomcat", "apache-tomcat-9.0.0")
+			contextFile := filepath.Join(tomcatDir, "conf", "Catalina", "localhost", "ROOT.xml")
+			Expect(contextFile).To(BeAnExistingFile())
 		})
 	})
 
@@ -759,10 +772,10 @@ var _ = Describe("Container Registry", func() {
 					container.Detect()
 				})
 
-				It("prepends bin/ to command", func() {
+				It("uses absolute path with $HOME prefix", func() {
 					cmd, err := container.Release()
 					Expect(err).NotTo(HaveOccurred())
-					Expect(cmd).To(Equal("bin/myapp"))
+					Expect(cmd).To(Equal("$HOME/bin/myapp"))
 				})
 			})
 
@@ -774,10 +787,10 @@ var _ = Describe("Container Registry", func() {
 					container.Detect()
 				})
 
-				It("uses path as-is", func() {
+				It("uses absolute path with $HOME prefix", func() {
 					cmd, err := container.Release()
 					Expect(err).NotTo(HaveOccurred())
-					Expect(cmd).To(Equal("application-root/bin/launcher"))
+					Expect(cmd).To(Equal("$HOME/application-root/bin/launcher"))
 				})
 			})
 

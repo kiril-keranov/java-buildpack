@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
 
@@ -168,10 +167,6 @@ func (d *DistZipContainer) Finalize() error {
 	d.context.Log.BeginStep("Finalizing Dist ZIP")
 	d.context.Log.Info("DistZip Finalize: Starting (startScript=%s)", d.startScript)
 
-	// Write profile.d script to set DIST_ZIP_HOME and PATH at runtime
-	// At runtime, CF makes the application available at $HOME
-	// This ensures the startup script directory is in PATH
-
 	// Determine the script directory based on start script location
 	var scriptDir string
 	if strings.Contains(d.startScript, "/") {
@@ -182,24 +177,37 @@ func (d *DistZipContainer) Finalize() error {
 		scriptDir = "bin"
 	}
 
+	// Collect additional libraries (JVMKill agent, frameworks, etc.)
+	additionalLibs := d.collectAdditionalLibraries()
+	d.context.Log.Info("Found %d additional libraries for CLASSPATH", len(additionalLibs))
+
+	// Build CLASSPATH from additional libraries
+	// Convert staging paths to runtime paths
+	classpathParts := d.buildRuntimeClasspath(additionalLibs)
+
+	// Write profile.d script that sets up environment variables
+	// This follows the immutable BuildDir pattern: configure via environment, don't modify files
 	envContent := fmt.Sprintf(`export DEPS_DIR=${DEPS_DIR:-/home/vcap/deps}
 export DIST_ZIP_HOME=$HOME
 export DIST_ZIP_BIN=$HOME/%s
 export PATH=$DIST_ZIP_BIN:$PATH
+
+# Prepend additional libraries to CLASSPATH
+# Most distZip scripts respect CLASSPATH environment variable
+# This includes JVMKill agent, framework JARs, JDBC drivers, etc.
 `, scriptDir)
+
+	// Add CLASSPATH if we have additional libraries
+	if len(classpathParts) > 0 {
+		classpathValue := strings.Join(classpathParts, ":")
+		envContent += fmt.Sprintf("export CLASSPATH=\"%s:${CLASSPATH:-}\"\n", classpathValue)
+		d.context.Log.Info("Configured CLASSPATH with %d additional libraries", len(classpathParts))
+	}
 
 	if err := d.context.Stager.WriteProfileD("dist_zip.sh", envContent); err != nil {
 		d.context.Log.Warning("Could not write dist_zip.sh profile.d script: %s", err.Error())
 	} else {
 		d.context.Log.Debug("Created profile.d script: dist_zip.sh")
-	}
-
-	// Augment startup script CLASSPATH with additional libraries
-	// This matches Ruby buildpack behavior: modify script directly instead of using .profile.d
-	if err := d.augmentStartupScript(); err != nil {
-		d.context.Log.Warning("Could not augment startup script: %s", err.Error())
-	} else {
-		d.context.Log.Info("DistZip Finalize: Successfully augmented startup script")
 	}
 
 	// Configure JAVA_OPTS to be picked up by startup scripts
@@ -216,109 +224,47 @@ export PATH=$DIST_ZIP_BIN:$PATH
 		return fmt.Errorf("failed to write JAVA_OPTS: %w", err)
 	}
 
+	d.context.Log.Info("DistZip finalization complete (using environment variables, not modifying scripts)")
 	return nil
 }
 
-// augmentStartupScript modifies the startup script to prepend additional libraries to CLASSPATH
-// This follows Ruby buildpack's approach from lib/java_buildpack/container/dist_zip_like.rb
-func (d *DistZipContainer) augmentStartupScript() error {
+// buildRuntimeClasspath converts staging library paths to runtime paths for CLASSPATH
+func (d *DistZipContainer) buildRuntimeClasspath(libs []string) []string {
+	depsDir := d.context.Stager.DepDir()
 	buildDir := d.context.Stager.BuildDir()
+	var classpathParts []string
 
-	// Determine startup script path
-	var scriptPath string
-	if strings.Contains(d.startScript, "/") {
-		// application-root case: script path includes directory
-		scriptPath = filepath.Join(buildDir, d.startScript)
-	} else {
-		// root structure case: script in bin/
-		scriptPath = filepath.Join(buildDir, "bin", d.startScript)
-	}
+	for _, lib := range libs {
+		var runtimePath string
 
-	d.context.Log.Info("DistZip augmentStartupScript: scriptPath=%s, buildDir=%s", scriptPath, buildDir)
-
-	// Read startup script content
-	content, err := os.ReadFile(scriptPath)
-	if err != nil {
-		d.context.Log.Error("DistZip augmentStartupScript: Failed to read script at %s: %s", scriptPath, err.Error())
-		return fmt.Errorf("failed to read startup script: %w", err)
-	}
-
-	d.context.Log.Info("DistZip augmentStartupScript: Read %d bytes from startup script", len(content))
-	scriptContent := string(content)
-
-	// Collect additional libraries (JVMKill agent, frameworks, etc.)
-	additionalLibs := d.collectAdditionalLibraries()
-	d.context.Log.Info("DistZip augmentStartupScript: Found %d additional libraries: %v", len(additionalLibs), additionalLibs)
-	if len(additionalLibs) == 0 {
-		d.context.Log.Info("DistZip augmentStartupScript: No additional libraries to add to CLASSPATH, skipping augmentation")
-		return nil
-	}
-
-	// Try augmenting CLASSPATH using two patterns (matching Ruby buildpack):
-	// 1. declare -r app_classpath="..." (newer Gradle format)
-	// 2. CLASSPATH=... (older format)
-
-	modified := false
-
-	// Pattern 1: declare -r app_classpath="..."
-	// Example: declare -r app_classpath="$app_home/lib/myapp.jar:$app_home/lib/dep.jar"
-	// We prepend: declare -r app_classpath="$app_home/.deps/0/jvmkill/jvmkill.so:$app_home/lib/myapp.jar:..."
-	appClasspathPattern := regexp.MustCompile(`(?m)^declare -r app_classpath="(.+)"$`)
-	if appClasspathPattern.MatchString(scriptContent) {
-		d.context.Log.Info("DistZip augmentStartupScript: Found app_classpath pattern in startup script")
-
-		// Build classpath prefix using $app_home (relative to script location)
-		classpathPrefix := d.buildClasspathPrefix(additionalLibs, "$app_home")
-		d.context.Log.Info("DistZip augmentStartupScript: Built classpath prefix: %s", classpathPrefix)
-
-		scriptContent = appClasspathPattern.ReplaceAllString(scriptContent,
-			fmt.Sprintf(`declare -r app_classpath="%s:$1"`, classpathPrefix))
-		modified = true
-	}
-
-	// Pattern 2: CLASSPATH=...
-	// Example: CLASSPATH=$APP_HOME/lib/myapp.jar:$APP_HOME/lib/dep.jar
-	// We prepend: CLASSPATH=$APP_HOME/.deps/0/jvmkill/jvmkill.so:$APP_HOME/lib/myapp.jar:...
-	if !modified {
-		classpathPattern := regexp.MustCompile(`(?m)^CLASSPATH=(.+)$`)
-		if classpathPattern.MatchString(scriptContent) {
-			d.context.Log.Info("DistZip augmentStartupScript: Found CLASSPATH pattern in startup script")
-
-			// Build classpath prefix using $APP_HOME (absolute path from root)
-			classpathPrefix := d.buildClasspathPrefix(additionalLibs, "$APP_HOME")
-			d.context.Log.Info("DistZip augmentStartupScript: Built classpath prefix: %s", classpathPrefix)
-
-			// Use ReplaceAllStringFunc to avoid $ being interpreted as regex backreference
-			scriptContent = classpathPattern.ReplaceAllStringFunc(scriptContent, func(match string) string {
-				// Extract original CLASSPATH value (everything after "CLASSPATH=")
-				originalClasspath := strings.TrimPrefix(match, "CLASSPATH=")
-				replacement := fmt.Sprintf("CLASSPATH=%s:%s", classpathPrefix, originalClasspath)
-				d.context.Log.Info("DistZip augmentStartupScript: Matched line: %s", match)
-				d.context.Log.Info("DistZip augmentStartupScript: Original classpath: %s", originalClasspath)
-				d.context.Log.Info("DistZip augmentStartupScript: Replacement line: %s", replacement)
-				return replacement
-			})
-			modified = true
-			d.context.Log.Info("DistZip augmentStartupScript: Script modification complete")
+		// Check if library is in deps directory (e.g., framework JARs, agents)
+		if strings.HasPrefix(lib, depsDir) {
+			// Convert staging absolute path to runtime path
+			// Staging: /tmp/staging/deps/0/new_relic_agent/newrelic.jar
+			// Runtime: $DEPS_DIR/0/new_relic_agent/newrelic.jar
+			relPath := strings.TrimPrefix(lib, depsDir)
+			relPath = strings.TrimPrefix(relPath, "/") // Remove leading slash
+			relPath = filepath.ToSlash(relPath)        // Normalize slashes
+			runtimePath = fmt.Sprintf("$DEPS_DIR/0/%s", relPath)
+		} else if strings.HasPrefix(lib, buildDir) {
+			// Library is in build directory (unlikely for additional libs, but handle it)
+			relPath, err := filepath.Rel(buildDir, lib)
+			if err != nil {
+				d.context.Log.Warning("Could not calculate relative path for %s: %s", lib, err.Error())
+				continue
+			}
+			relPath = filepath.ToSlash(relPath)
+			runtimePath = fmt.Sprintf("$HOME/%s", relPath)
+		} else {
+			// Fallback: library path doesn't match expected patterns
+			d.context.Log.Warning("Library path %s doesn't match deps or build directory, using as-is", lib)
+			runtimePath = lib
 		}
+
+		classpathParts = append(classpathParts, runtimePath)
 	}
 
-	if !modified {
-		d.context.Log.Warning("DistZip augmentStartupScript: No CLASSPATH pattern found in startup script - cannot augment")
-		d.context.Log.Info("DistZip augmentStartupScript: First 500 chars of script:\n%s", scriptContent[:min(500, len(scriptContent))])
-		return nil
-	}
-
-	// Write modified script back
-	d.context.Log.Info("DistZip augmentStartupScript: About to write modified script (first 1000 chars):\n%s", scriptContent[:min(1000, len(scriptContent))])
-	if err := os.WriteFile(scriptPath, []byte(scriptContent), 0755); err != nil {
-		d.context.Log.Error("DistZip augmentStartupScript: Failed to write modified script: %s", err.Error())
-		return fmt.Errorf("failed to write modified startup script: %w", err)
-	}
-
-	d.context.Log.Info("DistZip augmentStartupScript: Successfully wrote modified script to %s", scriptPath)
-	d.context.Log.Info("Augmented startup script CLASSPATH with %d additional libraries", len(additionalLibs))
-	return nil
+	return classpathParts
 }
 
 // collectAdditionalLibraries gathers all additional libraries that should be added to CLASSPATH
@@ -362,49 +308,6 @@ func (d *DistZipContainer) collectAdditionalLibraries() []string {
 	}
 
 	return libs
-}
-
-// buildClasspathPrefix constructs the CLASSPATH prefix from additional libraries
-// baseVar is either "$app_home" (relative to script location) or "$APP_HOME" (absolute from root)
-func (d *DistZipContainer) buildClasspathPrefix(libs []string, baseVar string) string {
-	depsDir := d.context.Stager.DepDir()
-	buildDir := d.context.Stager.BuildDir()
-
-	var classpathParts []string
-	for _, lib := range libs {
-		var runtimePath string
-
-		// Check if library is in deps directory (e.g., JVMKill agent)
-		if strings.HasPrefix(lib, depsDir) {
-			// Convert staging absolute path to runtime-relative path
-			// Staging: /tmp/staging/deps/0/jre/bin/jvmkill-1.16.0.so
-			// Runtime: $APP_HOME/../deps/0/jre/bin/jvmkill-1.16.0.so (relative to app directory)
-			// Note: We use baseVar/../deps instead of $DEPS_DIR because the startup script
-			// runs before .profile.d scripts are sourced, so $DEPS_DIR is not yet available.
-			// At runtime: $HOME=/home/vcap/app, and deps is at /home/vcap/deps (sibling directory)
-			relPath := strings.TrimPrefix(lib, depsDir)
-			relPath = strings.TrimPrefix(relPath, "/") // Remove leading slash
-			relPath = filepath.ToSlash(relPath)        // Normalize slashes
-			runtimePath = fmt.Sprintf("%s/../deps/0/%s", baseVar, relPath)
-		} else if strings.HasPrefix(lib, buildDir) {
-			// Library is in build directory, calculate relative path from app root
-			relPath, err := filepath.Rel(buildDir, lib)
-			if err != nil {
-				d.context.Log.Warning("Could not calculate relative path for %s: %s", lib, err.Error())
-				continue
-			}
-			relPath = filepath.ToSlash(relPath)
-			runtimePath = fmt.Sprintf("%s/%s", baseVar, relPath)
-		} else {
-			// Fallback: library path doesn't match expected patterns
-			d.context.Log.Warning("Library path %s doesn't match deps or build directory, using as-is", lib)
-			runtimePath = lib
-		}
-
-		classpathParts = append(classpathParts, runtimePath)
-	}
-
-	return strings.Join(classpathParts, ":")
 }
 
 // Release returns the Dist ZIP startup command
