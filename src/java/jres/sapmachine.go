@@ -83,9 +83,11 @@ func (s *SapMachineJRE) Supply() error {
 	s.javaHome = javaHome
 	s.installedVersion = s.version
 
-	// Set up JAVA_HOME environment
-	if err := SetupJavaHome(s.ctx, s.jreDir); err != nil {
-		return fmt.Errorf("failed to set up JAVA_HOME: %w", err)
+	// Write profile.d script for runtime environment
+	if err := s.writeProfileDScript(); err != nil {
+		s.ctx.Log.Warning("Could not write java.sh profile.d script: %s", err.Error())
+	} else {
+		s.ctx.Log.Debug("Created profile.d script: java.sh")
 	}
 
 	// Determine Java major version
@@ -208,4 +210,10 @@ func (s *SapMachineJRE) findJavaHome() (string, error) {
 	}
 
 	return "", fmt.Errorf("could not find valid JAVA_HOME in %s", s.jreDir)
+}
+
+// writeProfileDScript creates a profile.d script that exports JAVA_HOME, JRE_HOME, and PATH at runtime
+// Delegates to the shared helper function in jre.go
+func (s *SapMachineJRE) writeProfileDScript() error {
+	return WriteJavaHomeProfileD(s.ctx, s.jreDir, s.javaHome)
 }

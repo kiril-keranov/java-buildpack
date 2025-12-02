@@ -168,63 +168,6 @@ func normalizeVersionPattern(version string) string {
 	return version + ".*"
 }
 
-// SetupJavaHome sets JAVA_HOME and related environment variables
-func SetupJavaHome(ctx *Context, javaHome string) error {
-	// Find actual JRE directory (usually jdk-* or jre-* subdirectory)
-	entries, err := os.ReadDir(javaHome)
-	if err != nil {
-		return fmt.Errorf("failed to read JRE directory: %w", err)
-	}
-
-	// Look for jdk-* or jre-* subdirectory
-	var actualJavaHome string
-	var subdirectory string
-	for _, entry := range entries {
-		if entry.IsDir() && (strings.HasPrefix(entry.Name(), "jdk") || strings.HasPrefix(entry.Name(), "jre")) {
-			actualJavaHome = filepath.Join(javaHome, entry.Name())
-			subdirectory = entry.Name()
-			break
-		}
-	}
-
-	// If no subdirectory found, use the javaHome directly
-	if actualJavaHome == "" {
-		actualJavaHome = javaHome
-		subdirectory = ""
-	}
-
-	// Construct runtime path for profile.d script using $DEPS_DIR
-	// At runtime, CF sets $DEPS_DIR (e.g., /home/vcap/deps) and makes dependencies available at $DEPS_DIR/<idx>/
-	// The javaHome parameter is something like /tmp/app/.cloudfoundry/0/jre (staging time)
-	// We need to construct $DEPS_DIR/0/jre/<subdirectory> (runtime)
-	depsIdx := ctx.Stager.DepsIdx()
-	var runtimeJavaHome string
-	if subdirectory != "" {
-		runtimeJavaHome = fmt.Sprintf("$DEPS_DIR/%s/jre/%s", depsIdx, subdirectory)
-	} else {
-		runtimeJavaHome = fmt.Sprintf("$DEPS_DIR/%s/jre", depsIdx)
-	}
-
-	// Write environment variables to profile.d using runtime $HOME path
-	envContent := fmt.Sprintf(`export JAVA_HOME=%s
-export JRE_HOME=%s
-export PATH=$JAVA_HOME/bin:$PATH
-`, runtimeJavaHome, runtimeJavaHome)
-
-	if err := ctx.Stager.WriteProfileD("java.sh", envContent); err != nil {
-		return fmt.Errorf("failed to write java.sh: %w", err)
-	}
-
-	// Also set for current process (use absolute path for staging time)
-	os.Setenv("JAVA_HOME", actualJavaHome)
-	os.Setenv("JRE_HOME", actualJavaHome)
-	os.Setenv("PATH", filepath.Join(actualJavaHome, "bin")+":"+os.Getenv("PATH"))
-
-	ctx.Log.Info("Set JAVA_HOME to %s (runtime: %s)", actualJavaHome, runtimeJavaHome)
-
-	return nil
-}
-
 // DetermineJavaVersion determines the major Java version from the installed JRE
 func DetermineJavaVersion(javaHome string) (int, error) {
 	// Try to read release file
@@ -280,6 +223,64 @@ func WriteJavaOpts(ctx *Context, opts string) error {
 
 	if err := os.WriteFile(profileScript, []byte(scriptContent), 0755); err != nil {
 		return fmt.Errorf("failed to write profile.d/java_opts.sh: %w", err)
+	}
+
+	return nil
+}
+
+// WriteJavaHomeProfileD creates a profile.d script that exports JAVA_HOME, JRE_HOME, and PATH at runtime
+// This is needed for containers that use startup scripts expecting $JAVA_HOME environment variable
+//
+// Parameters:
+//   - ctx: JRE context with Stager and Logger
+//   - jreDir: The directory where the JRE was installed (e.g., $DEPS_DIR/0/jre)
+//   - javaHome: The actual JAVA_HOME path (may be jreDir or a subdirectory)
+//
+// The function creates a java.sh script in profile.d that:
+//  1. Exports JAVA_HOME using $DEPS_DIR runtime variable
+//  2. Exports JRE_HOME (same as JAVA_HOME)
+//  3. Prepends $JAVA_HOME/bin to PATH
+//
+// It also sets these environment variables during staging for use by frameworks.
+func WriteJavaHomeProfileD(ctx *Context, jreDir, javaHome string) error {
+	// Compute relative path from jreDir to javaHome
+	relPath, err := filepath.Rel(jreDir, javaHome)
+	if err != nil {
+		return fmt.Errorf("failed to compute relative path: %w", err)
+	}
+
+	// Build the JAVA_HOME path using $DEPS_DIR environment variable
+	// This allows the path to work at runtime when the app is staged
+	var javaHomePath string
+	if relPath == "." {
+		// JAVA_HOME is directly at jreDir
+		javaHomePath = "$DEPS_DIR/0/jre"
+	} else {
+		// JAVA_HOME is in a subdirectory (e.g., jdk-17.0.13)
+		javaHomePath = fmt.Sprintf("$DEPS_DIR/0/jre/%s", relPath)
+	}
+
+	// Create the profile.d script content with JAVA_HOME, JRE_HOME, and PATH
+	// Following the pattern from reference buildpacks (Ruby, Python, Go)
+	envContent := fmt.Sprintf(`export JAVA_HOME=%s
+export JRE_HOME=%s
+export PATH=$JAVA_HOME/bin:$PATH
+`, javaHomePath, javaHomePath)
+
+	// Write the profile.d script using libbuildpack API
+	if err := ctx.Stager.WriteProfileD("java.sh", envContent); err != nil {
+		return fmt.Errorf("failed to write profile.d script: %w", err)
+	}
+
+	// Also set environment variables for staging time (used by frameworks during finalize)
+	if err := os.Setenv("JAVA_HOME", javaHome); err != nil {
+		ctx.Log.Warning("Failed to set JAVA_HOME environment variable: %s", err.Error())
+	}
+	if err := os.Setenv("JRE_HOME", javaHome); err != nil {
+		ctx.Log.Warning("Failed to set JRE_HOME environment variable: %s", err.Error())
+	}
+	if err := os.Setenv("PATH", filepath.Join(javaHome, "bin")+":"+os.Getenv("PATH")); err != nil {
+		ctx.Log.Warning("Failed to set PATH environment variable: %s", err.Error())
 	}
 
 	return nil

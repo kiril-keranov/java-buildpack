@@ -85,9 +85,11 @@ func (i *IBMJRE) Supply() error {
 	i.javaHome = javaHome
 	i.installedVersion = i.version
 
-	// Set up JAVA_HOME environment
-	if err := SetupJavaHome(i.ctx, i.jreDir); err != nil {
-		return fmt.Errorf("failed to set up JAVA_HOME: %w", err)
+	// Write profile.d script for runtime environment
+	if err := i.writeProfileDScript(); err != nil {
+		i.ctx.Log.Warning("Could not write java.sh profile.d script: %s", err.Error())
+	} else {
+		i.ctx.Log.Debug("Created profile.d script: java.sh")
 	}
 
 	// Determine Java major version
@@ -213,4 +215,9 @@ func (i *IBMJRE) findJavaHome() (string, error) {
 	}
 
 	return "", fmt.Errorf("could not find valid JAVA_HOME in %s", i.jreDir)
+}
+
+// writeProfileDScript creates the profile.d script for setting JAVA_HOME, JRE_HOME, and PATH at runtime
+func (i *IBMJRE) writeProfileDScript() error {
+	return WriteJavaHomeProfileD(i.ctx, i.jreDir, i.javaHome)
 }

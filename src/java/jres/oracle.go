@@ -84,9 +84,11 @@ func (o *OracleJRE) Supply() error {
 	o.javaHome = javaHome
 	o.installedVersion = o.version
 
-	// Set up JAVA_HOME environment
-	if err := SetupJavaHome(o.ctx, o.jreDir); err != nil {
-		return fmt.Errorf("failed to set up JAVA_HOME: %w", err)
+	// Write profile.d script for runtime environment
+	if err := o.writeProfileDScript(); err != nil {
+		o.ctx.Log.Warning("Could not write java.sh profile.d script: %s", err.Error())
+	} else {
+		o.ctx.Log.Debug("Created profile.d script: java.sh")
 	}
 
 	// Determine Java major version
@@ -202,4 +204,9 @@ func (o *OracleJRE) findJavaHome() (string, error) {
 	}
 
 	return "", fmt.Errorf("could not find valid JAVA_HOME in %s", o.jreDir)
+}
+
+// writeProfileDScript creates the profile.d script for setting JAVA_HOME, JRE_HOME, and PATH at runtime
+func (o *OracleJRE) writeProfileDScript() error {
+	return WriteJavaHomeProfileD(o.ctx, o.jreDir, o.javaHome)
 }

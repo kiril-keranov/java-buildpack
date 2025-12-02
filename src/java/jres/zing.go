@@ -84,9 +84,11 @@ func (z *ZingJRE) Supply() error {
 	z.javaHome = javaHome
 	z.installedVersion = z.version
 
-	// Set up JAVA_HOME environment
-	if err := SetupJavaHome(z.ctx, z.jreDir); err != nil {
-		return fmt.Errorf("failed to set up JAVA_HOME: %w", err)
+	// Write profile.d script for runtime JAVA_HOME setup
+	if err := z.writeProfileDScript(); err != nil {
+		z.ctx.Log.Warning("Could not write java.sh profile.d script: %s", err.Error())
+	} else {
+		z.ctx.Log.Debug("Created profile.d script: java.sh")
 	}
 
 	z.ctx.Log.Info("Zing JRE installation complete")
@@ -158,4 +160,36 @@ func (z *ZingJRE) findJavaHome() (string, error) {
 	}
 
 	return "", fmt.Errorf("could not find valid JAVA_HOME in %s", z.jreDir)
+}
+
+// writeProfileDScript creates the java.sh profile.d script
+// This script sets JAVA_HOME, JRE_HOME, and updates PATH at application runtime
+func (z *ZingJRE) writeProfileDScript() error {
+	// Compute relative path from jreDir to javaHome
+	relPath, err := filepath.Rel(z.jreDir, z.javaHome)
+	if err != nil {
+		return fmt.Errorf("failed to compute relative path: %w", err)
+	}
+
+	// Build the runtime JAVA_HOME path
+	// At runtime, DEPS_DIR will point to the app's dependency directory
+	javaHomePath := filepath.Join("$DEPS_DIR", "0", "jre", relPath)
+
+	// Create the environment script content
+	envContent := fmt.Sprintf(`export JAVA_HOME=%s
+export JRE_HOME=$JAVA_HOME
+export PATH=$JAVA_HOME/bin:$PATH
+`, javaHomePath)
+
+	// Write the profile.d script using libbuildpack API
+	if err := z.ctx.Stager.WriteProfileD("java.sh", envContent); err != nil {
+		return fmt.Errorf("failed to write profile.d script: %w", err)
+	}
+
+	// Also set environment for the staging process
+	os.Setenv("JAVA_HOME", z.javaHome)
+	os.Setenv("JRE_HOME", z.javaHome)
+	os.Setenv("PATH", fmt.Sprintf("%s/bin:%s", z.javaHome, os.Getenv("PATH")))
+
+	return nil
 }

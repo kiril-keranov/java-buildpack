@@ -84,8 +84,10 @@ func (z *ZuluJRE) Supply() error {
 	z.installedVersion = z.version
 
 	// Set up JAVA_HOME environment
-	if err := SetupJavaHome(z.ctx, z.jreDir); err != nil {
-		return fmt.Errorf("failed to set up JAVA_HOME: %w", err)
+	if err := z.writeProfileDScript(); err != nil {
+		z.ctx.Log.Warning("Could not write java.sh profile.d script: %s", err.Error())
+	} else {
+		z.ctx.Log.Debug("Created profile.d script: java.sh")
 	}
 
 	// Determine Java major version
@@ -208,4 +210,10 @@ func (z *ZuluJRE) findJavaHome() (string, error) {
 	}
 
 	return "", fmt.Errorf("could not find valid JAVA_HOME in %s", z.jreDir)
+}
+
+// writeProfileDScript creates a profile.d script that exports JAVA_HOME, JRE_HOME, and PATH at runtime
+// Delegates to the shared helper function in jre.go
+func (z *ZuluJRE) writeProfileDScript() error {
+	return WriteJavaHomeProfileD(z.ctx, z.jreDir, z.javaHome)
 }

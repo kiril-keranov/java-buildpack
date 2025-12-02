@@ -79,9 +79,11 @@ func (g *GraalVMJRE) Supply() error {
 	g.javaHome = javaHome
 	g.installedVersion = g.version
 
-	// Set up JAVA_HOME environment
-	if err := SetupJavaHome(g.ctx, g.jreDir); err != nil {
-		return fmt.Errorf("failed to set up JAVA_HOME: %w", err)
+	// Write profile.d script for runtime environment
+	if err := g.writeProfileDScript(); err != nil {
+		g.ctx.Log.Warning("Could not write java.sh profile.d script: %s", err.Error())
+	} else {
+		g.ctx.Log.Debug("Created profile.d script: java.sh")
 	}
 
 	// Determine Java major version
@@ -204,4 +206,10 @@ func (g *GraalVMJRE) findJavaHome() (string, error) {
 	}
 
 	return "", fmt.Errorf("could not find valid JAVA_HOME in %s", g.jreDir)
+}
+
+// writeProfileDScript creates a profile.d script that exports JAVA_HOME, JRE_HOME, and PATH at runtime
+// Delegates to the shared helper function in jre.go
+func (g *GraalVMJRE) writeProfileDScript() error {
+	return WriteJavaHomeProfileD(g.ctx, g.jreDir, g.javaHome)
 }
