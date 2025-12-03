@@ -96,8 +96,23 @@ func (g *GroovyContainer) Release() (string, error) {
 	mainScript = os.Getenv("GROOVY_SCRIPT")
 
 	if mainScript == "" && len(g.groovyScripts) > 0 {
-		// Use the first Groovy script found
-		mainScript = filepath.Base(g.groovyScripts[0])
+		// Use Ruby buildpack logic to find the main script:
+		// 1. Files with static void main() method
+		// 2. Non-POGO files (simple scripts without class definitions)
+		// 3. Files with shebang
+		// Returns the single candidate if exactly one matches
+		selectedScript, err := FindMainGroovyScript(g.groovyScripts)
+		if err != nil {
+			g.context.Log.Warning("Error finding main Groovy script: %s", err.Error())
+		}
+		if selectedScript != "" {
+			mainScript = filepath.Base(selectedScript)
+			g.context.Log.Debug("Selected main script: %s", mainScript)
+		} else {
+			// Fall back to the first script if no clear candidate
+			mainScript = filepath.Base(g.groovyScripts[0])
+			g.context.Log.Debug("Using first script: %s", mainScript)
+		}
 	}
 
 	if mainScript == "" {

@@ -17,6 +17,11 @@
 
 import java.lang.management.ManagementFactory
 
+@Grab('io.undertow:undertow-core:2.2.24.Final')
+import io.undertow.Undertow
+import io.undertow.server.HttpHandler
+import io.undertow.server.HttpServerExchange
+import io.undertow.util.Headers
 
 class Main {
 
@@ -40,11 +45,26 @@ class Main {
         data["Environment Variables"] = System.getenv()
         data["Input Arguments"] = runtimeMxBean.inputArguments
 
-        map(data, new IndentingPrintStream(System.out))
+        def output = new StringBuilder()
+        map(data, new IndentingPrintStream(output))
 
-        println ''
-        println "Sleeping for 1 minute..."
-        Thread.sleep(60 * 1000)
+        def port = System.getenv('PORT') ?: '8080'
+
+        println "Starting server on port ${port}..."
+
+        Undertow.builder()
+            .addHttpListener(port.toInteger(), "0.0.0.0")
+            .setHandler({ HttpServerExchange exchange ->
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain")
+                exchange.getResponseSender().send(output.toString())
+            } as HttpHandler)
+            .build()
+            .start()
+
+        println "Server started on port ${port}"
+
+        // Keep the application running
+        Thread.sleep(Long.MAX_VALUE)
     }
 
     def static list(data, out) {
@@ -78,11 +98,11 @@ class Main {
 
         def out
 
-        IndentingPrintStream(PrintStream out) {
+        IndentingPrintStream(StringBuilder out) {
             this(0, out)
         }
 
-        IndentingPrintStream(int indent, PrintStream out) {
+        IndentingPrintStream(int indent, StringBuilder out) {
             this.indent = indent
             this.out = out
         }
@@ -95,8 +115,9 @@ class Main {
             }
 
             sb.append s
+            sb.append '\n'
 
-            out.println sb.toString()
+            out.append sb.toString()
         }
 
         IndentingPrintStream indent() {

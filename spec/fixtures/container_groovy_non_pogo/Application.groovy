@@ -15,4 +15,26 @@
  * limitations under the License.
  */
 
-println 'Hello World'
+@Grab('io.undertow:undertow-core:2.2.24.Final')
+import io.undertow.Undertow
+import io.undertow.server.HttpHandler
+import io.undertow.server.HttpServerExchange
+import io.undertow.util.Headers
+
+def port = System.getenv('PORT') ?: '8080'
+
+println "Starting server on port ${port}..."
+
+Undertow.builder()
+    .addHttpListener(port.toInteger(), "0.0.0.0")
+    .setHandler({ HttpServerExchange exchange ->
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain")
+        exchange.getResponseSender().send("Hello World")
+    } as HttpHandler)
+    .build()
+    .start()
+
+println "Server started on port ${port}"
+
+// Keep the application running
+Thread.sleep(Long.MAX_VALUE)
