@@ -15,4 +15,10 @@
  * limitations under the License.
  */
 
-class X {
+@RestController
+class HelloController {
+    @RequestMapping("/")
+    String home() {
+        "Hello from Spring Boot CLI!"
+    }
+}

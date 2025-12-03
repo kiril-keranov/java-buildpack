@@ -15,4 +15,10 @@
  * limitations under the License.
  */
 
-class Runner implements CommandLineRunner {
+@Configuration
+class AppConfig {
+    @Bean
+    String appName() {
+        "Spring Boot CLI Test App"
+    }
+}

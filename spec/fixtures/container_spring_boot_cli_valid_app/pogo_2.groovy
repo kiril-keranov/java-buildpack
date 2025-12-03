@@ -15,4 +15,10 @@
  * limitations under the License.
  */
 
-class Yy_y {
+class Message {
+    String text
+    
+    Message(String text) {
+        this.text = text
+    }
+}

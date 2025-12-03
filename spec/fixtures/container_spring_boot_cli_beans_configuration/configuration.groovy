@@ -16,5 +16,5 @@
  */
 
 beans {
-
+    customMessage(String, "Hello from beans DSL")
 }

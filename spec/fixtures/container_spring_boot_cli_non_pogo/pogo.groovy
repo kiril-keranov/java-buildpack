@@ -15,4 +15,7 @@
  * limitations under the License.
  */
 
-class X {
+class DataModel {
+    String name
+    int value
+}

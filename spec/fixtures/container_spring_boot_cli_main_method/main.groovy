@@ -15,4 +15,10 @@
  * limitations under the License.
  */
 
-static void main(
+@RestController
+class MainMethodController {
+    @RequestMapping("/")
+    String home() {
+        "Main method test application"
+    }
+}

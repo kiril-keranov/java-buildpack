@@ -15,4 +15,10 @@
  * limitations under the License.
  */
 
-x
+@RestController
+class NonPogoController {
+    @GetMapping("/")
+    def index() {
+        [message: "Non-POGO script test", status: "ok"]
+    }
+}

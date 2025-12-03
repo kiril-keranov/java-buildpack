@@ -15,4 +15,7 @@
  * limitations under the License.
  */
 
-class X {
+class AppInfo {
+    String version = "1.0.0"
+    String name = "Main Method Test"
+}

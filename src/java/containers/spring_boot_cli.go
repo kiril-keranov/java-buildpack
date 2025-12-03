@@ -34,20 +34,13 @@ func (s *SpringBootCLIContainer) Detect() (string, error) {
 
 	var groovyFiles []string
 	for _, file := range allGroovyFiles {
-		if !s.groovyUtils.IsLogbackConfigFile(file) {
+		if !s.groovyUtils.IsLogbackConfigFile(file) && isValidGroovyFile(file) {
 			groovyFiles = append(groovyFiles, file)
 		}
 	}
 
 	// Must have at least one Groovy file
 	if len(groovyFiles) == 0 {
-		return "", nil
-	}
-
-	// Check if WEB-INF exists (Spring Boot CLI doesn't support WAR structure)
-	webInfPath := filepath.Join(buildDir, "WEB-INF")
-	if _, err := os.Stat(webInfPath); err == nil {
-		s.context.Log.Debug("Found WEB-INF directory, not a Spring Boot CLI app")
 		return "", nil
 	}
 

@@ -15,4 +15,10 @@
  * limitations under the License.
  */
 
-class X {
+@RestController
+class BeansController {
+    @RequestMapping("/")
+    String home() {
+        "Beans configuration test"
+    }
+}

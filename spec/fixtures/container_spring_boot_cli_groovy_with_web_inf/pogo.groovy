@@ -15,4 +15,10 @@
  * limitations under the License.
  */
 
-class X {
+@RestController
+class WebInfController {
+    @RequestMapping("/")
+    String home() {
+        "WEB-INF compatibility test"
+    }
+}
