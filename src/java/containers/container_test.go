@@ -67,6 +67,10 @@ var _ = Describe("Container Registry", func() {
 		Context("with BOOT-INF directory", func() {
 			BeforeEach(func() {
 				os.MkdirAll(filepath.Join(buildDir, "BOOT-INF"), 0755)
+				// Create META-INF/MANIFEST.MF with Spring Boot markers
+				os.MkdirAll(filepath.Join(buildDir, "META-INF"), 0755)
+				manifest := "Manifest-Version: 1.0\nStart-Class: com.example.App\nSpring-Boot-Version: 2.7.0\n"
+				os.WriteFile(filepath.Join(buildDir, "META-INF", "MANIFEST.MF"), []byte(manifest), 0644)
 			})
 
 			It("detects as Spring Boot", func() {
@@ -187,6 +191,10 @@ var _ = Describe("Container Registry", func() {
 		Context("with Spring Boot app", func() {
 			BeforeEach(func() {
 				os.MkdirAll(filepath.Join(buildDir, "BOOT-INF"), 0755)
+				// Create META-INF/MANIFEST.MF with Spring Boot markers
+				os.MkdirAll(filepath.Join(buildDir, "META-INF"), 0755)
+				manifest := "Manifest-Version: 1.0\nStart-Class: com.example.App\nSpring-Boot-Version: 2.7.0\n"
+				os.WriteFile(filepath.Join(buildDir, "META-INF", "MANIFEST.MF"), []byte(manifest), 0644)
 			})
 
 			It("detects Spring Boot container", func() {
@@ -256,6 +264,11 @@ var _ = Describe("Container Registry", func() {
 			Context("with exploded JAR (BOOT-INF)", func() {
 				BeforeEach(func() {
 					os.MkdirAll(filepath.Join(buildDir, "BOOT-INF"), 0755)
+					// Create META-INF/MANIFEST.MF with Spring Boot markers
+					os.MkdirAll(filepath.Join(buildDir, "META-INF"), 0755)
+					manifest := "Manifest-Version: 1.0\nMain-Class: org.springframework.boot.loader.JarLauncher\nStart-Class: com.example.App\nSpring-Boot-Version: 2.7.0\n"
+					os.WriteFile(filepath.Join(buildDir, "META-INF", "MANIFEST.MF"), []byte(manifest), 0644)
+					container.Detect()
 				})
 
 				It("uses JarLauncher", func() {

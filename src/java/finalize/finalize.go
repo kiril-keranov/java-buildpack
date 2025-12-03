@@ -33,14 +33,9 @@ func Run(f *Finalizer) error {
 		Command:   f.Command,
 	}
 
-	// Create and populate container registry
+	// Create and populate container registry with standard containers
 	registry := containers.NewRegistry(ctx)
-	registry.Register(containers.NewSpringBootContainer(ctx))
-	registry.Register(containers.NewTomcatContainer(ctx))
-	registry.Register(containers.NewGroovyContainer(ctx))
-	registry.Register(containers.NewPlayContainer(ctx))
-	registry.Register(containers.NewDistZipContainer(ctx))
-	registry.Register(containers.NewJavaMainContainer(ctx))
+	registry.RegisterStandardContainers()
 
 	// Detect which container was used (should match supply phase)
 	container, containerName, err := registry.Detect()

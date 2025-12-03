@@ -82,3 +82,25 @@ func (r *Registry) DetectAll() ([]Container, []string, error) {
 
 	return matched, names, nil
 }
+
+// RegisterStandardContainers registers all standard containers in the correct priority order.
+// This ensures Supply and Finalize phases use the same detection order.
+// IMPORTANT: The order matters! Containers are checked in registration order.
+// More specific containers (with stricter detection rules) must come before generic ones.
+func (r *Registry) RegisterStandardContainers() {
+	// Priority order (most specific to least specific):
+	// 1. Spring Boot - checks for BOOT-INF or Spring Boot JAR markers
+	// 2. Spring Boot CLI - checks for Groovy files with POGO/beans patterns (NO main method, NO shebang)
+	// 3. Tomcat - checks for WEB-INF or WAR files
+	// 4. Groovy - checks for Groovy files (with main method OR shebang)
+	// 5. Play - checks for Play Framework structure
+	// 6. DistZip - checks for bin/ and lib/ directories
+	// 7. JavaMain - checks for executable JAR with Main-Class manifest entry
+	r.Register(NewSpringBootContainer(r.context))
+	r.Register(NewSpringBootCLIContainer(r.context))
+	r.Register(NewTomcatContainer(r.context))
+	r.Register(NewGroovyContainer(r.context))
+	r.Register(NewPlayContainer(r.context))
+	r.Register(NewDistZipContainer(r.context))
+	r.Register(NewJavaMainContainer(r.context))
+}
