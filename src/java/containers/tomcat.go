@@ -95,39 +95,18 @@ func (t *TomcatContainer) Supply() error {
 		}
 	}
 
-	// Install Tomcat
+	// Install Tomcat with strip components to remove the top-level directory
+	// Apache Tomcat tarballs extract to apache-tomcat-X.Y.Z/ subdirectory
 	tomcatDir := filepath.Join(t.context.Stager.DepDir(), "tomcat")
-	if err := t.context.Installer.InstallDependency(dep, tomcatDir); err != nil {
+	if err := t.context.Installer.InstallDependencyWithStrip(dep, tomcatDir, 1); err != nil {
 		return fmt.Errorf("failed to install Tomcat: %w", err)
 	}
 
 	t.context.Log.Info("Installed Tomcat version %s", dep.Version)
 
-	// Find the actual Tomcat home (handle nested directories from tar extraction)
-	// Apache Tomcat tarballs extract to apache-tomcat-X.Y.Z/ subdirectory
-	tomcatHome, err := t.findTomcatHome(tomcatDir)
-	if err != nil {
-		return fmt.Errorf("failed to find Tomcat home: %w", err)
-	}
-	t.context.Log.Debug("Found Tomcat home at: %s", tomcatHome)
-
 	// Write profile.d script to set CATALINA_HOME and CATALINA_BASE at runtime
-	// At runtime, CF makes dependencies available at $DEPS_DIR/<idx>/
-	// We need to point to the actual nested directory (e.g., apache-tomcat-X.Y.Z/)
 	depsIdx := t.context.Stager.DepsIdx()
-
-	// Get relative path from tomcatDir to tomcatHome for runtime
-	relPath, err := filepath.Rel(tomcatDir, tomcatHome)
-	if err != nil || relPath == "." {
-		relPath = ""
-	}
-
-	var tomcatPath string
-	if relPath == "" {
-		tomcatPath = fmt.Sprintf("$DEPS_DIR/%s/tomcat", depsIdx)
-	} else {
-		tomcatPath = fmt.Sprintf("$DEPS_DIR/%s/tomcat/%s", depsIdx, relPath)
-	}
+	tomcatPath := fmt.Sprintf("$DEPS_DIR/%s/tomcat", depsIdx)
 
 	envContent := fmt.Sprintf(`export CATALINA_HOME=%s
 export CATALINA_BASE=%s
@@ -172,12 +151,6 @@ func (t *TomcatContainer) Finalize() error {
 	buildDir := t.context.Stager.BuildDir()
 	tomcatDir := filepath.Join(t.context.Stager.DepDir(), "tomcat")
 
-	// Find Tomcat home (may be in subdirectory like apache-tomcat-X.Y.Z)
-	tomcatHome, err := t.findTomcatHome(tomcatDir)
-	if err != nil {
-		return fmt.Errorf("failed to find Tomcat home during finalize: %w", err)
-	}
-
 	// Check if we have an exploded WAR (WEB-INF directory in BuildDir)
 	webInf := filepath.Join(buildDir, "WEB-INF")
 	if _, err := os.Stat(webInf); err == nil {
@@ -187,7 +160,7 @@ func (t *TomcatContainer) Finalize() error {
 
 		// Create a custom context.xml file that points to BuildDir
 		// At runtime, $HOME will resolve to the application directory
-		if err := t.configureContextDocBase(tomcatHome); err != nil {
+		if err := t.configureContextDocBase(tomcatDir); err != nil {
 			return fmt.Errorf("failed to configure Tomcat context: %w", err)
 		}
 
@@ -195,7 +168,7 @@ func (t *TomcatContainer) Finalize() error {
 	}
 
 	// Configure Tomcat support JAR in common classpath
-	if err := t.configureTomcatSupport(tomcatHome); err != nil {
+	if err := t.configureTomcatSupport(tomcatDir); err != nil {
 		t.context.Log.Warning("Could not configure Tomcat support: %s", err.Error())
 	}
 
@@ -275,37 +248,6 @@ export CLASSPATH="%s:$CLASSPATH"
 
 	t.context.Log.Debug("Configured Tomcat support JAR in setenv.sh")
 	return nil
-}
-
-// findTomcatHome finds the actual Tomcat home directory
-// Apache Tomcat tarballs extract to apache-tomcat-X.Y.Z/ subdirectories
-func (t *TomcatContainer) findTomcatHome(tomcatDir string) (string, error) {
-	entries, err := os.ReadDir(tomcatDir)
-	if err != nil {
-		return "", fmt.Errorf("failed to read Tomcat directory: %w", err)
-	}
-
-	// Look for apache-tomcat-* subdirectory
-	for _, entry := range entries {
-		if entry.IsDir() {
-			name := entry.Name()
-			// Check for apache-tomcat-* directory pattern
-			if len(name) > 13 && name[:13] == "apache-tomcat" {
-				path := filepath.Join(tomcatDir, name)
-				// Verify it has bin/catalina.sh
-				if _, err := os.Stat(filepath.Join(path, "bin", "catalina.sh")); err == nil {
-					return path, nil
-				}
-			}
-		}
-	}
-
-	// If no subdirectory found, check if tomcatDir itself is valid
-	if _, err := os.Stat(filepath.Join(tomcatDir, "bin", "catalina.sh")); err == nil {
-		return tomcatDir, nil
-	}
-
-	return "", fmt.Errorf("could not find valid Tomcat home in %s", tomcatDir)
 }
 
 // Release returns the Tomcat startup command

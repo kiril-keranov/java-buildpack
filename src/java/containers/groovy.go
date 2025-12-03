@@ -51,22 +51,24 @@ func (g *GroovyContainer) Supply() error {
 		dep.Version = "4.0.0"
 	}
 
+	// Install Groovy with strip components to remove the top-level directory
+	// Groovy archives (e.g., apache-groovy-binary-4.0.23.zip) extract to groovy-X.Y.Z/ subdirectory
 	groovyDir := filepath.Join(g.context.Stager.DepDir(), "groovy")
-	if err := g.context.Installer.InstallDependency(dep, groovyDir); err != nil {
+	if err := g.context.Installer.InstallDependencyWithStrip(dep, groovyDir, 1); err != nil {
 		return fmt.Errorf("failed to install Groovy: %w", err)
 	}
 
 	g.context.Log.Info("Installed Groovy version %s", dep.Version)
 
-	// Set GROOVY_HOME
-	if err := g.context.Stager.WriteEnvFile("GROOVY_HOME", groovyDir); err != nil {
-		return fmt.Errorf("failed to set GROOVY_HOME: %w", err)
-	}
+	// Write profile.d script to set GROOVY_HOME at runtime
+	depsIdx := g.context.Stager.DepsIdx()
+	groovyPath := fmt.Sprintf("$DEPS_DIR/%s/groovy", depsIdx)
 
-	// Add Groovy bin to PATH
-	groovyBin := filepath.Join(groovyDir, "bin")
-	if err := g.context.Stager.AddBinDependencyLink(groovyBin, "groovy"); err != nil {
-		g.context.Log.Warning("Could not link groovy binary: %s", err.Error())
+	envContent := fmt.Sprintf("export GROOVY_HOME=%s\n", groovyPath)
+	if err := g.context.Stager.WriteProfileD("groovy.sh", envContent); err != nil {
+		g.context.Log.Warning("Could not write groovy.sh profile.d script: %s", err.Error())
+	} else {
+		g.context.Log.Debug("Created profile.d script: groovy.sh")
 	}
 
 	// Note: JVMKill agent is installed by the JRE component (src/java/jres/jvmkill.go)

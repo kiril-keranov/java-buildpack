@@ -86,7 +86,8 @@ func (s *SpringBootCLIContainer) Supply() error {
 	}
 
 	springBootCLIDir := filepath.Join(s.context.Stager.DepDir(), "spring-boot-cli")
-	if err := s.context.Installer.InstallDependency(dep, springBootCLIDir); err != nil {
+	// Strip top-level directory from archive (e.g., spring-2.7.0/)
+	if err := s.context.Installer.InstallDependencyWithStrip(dep, springBootCLIDir, 1); err != nil {
 		return fmt.Errorf("failed to install Spring Boot CLI: %w", err)
 	}
 

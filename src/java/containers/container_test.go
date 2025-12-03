@@ -646,11 +646,10 @@ var _ = Describe("Container Registry", func() {
 			container = containers.NewTomcatContainer(ctx)
 			os.MkdirAll(filepath.Join(buildDir, "WEB-INF"), 0755)
 
-			// Create mock Tomcat directory structure that Finalize expects
-			tomcatDir := filepath.Join(depsDir, "0", "tomcat", "apache-tomcat-9.0.0")
+			// Create mock Tomcat directory structure (after stripping top-level directory)
+			tomcatDir := filepath.Join(depsDir, "0", "tomcat")
 			os.MkdirAll(filepath.Join(tomcatDir, "bin"), 0755)
 			os.MkdirAll(filepath.Join(tomcatDir, "conf"), 0755)
-			// Create catalina.sh so findTomcatHome() can find it
 			os.WriteFile(filepath.Join(tomcatDir, "bin", "catalina.sh"), []byte("#!/bin/sh"), 0755)
 
 			container.Detect()
@@ -661,7 +660,7 @@ var _ = Describe("Container Registry", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// Verify context configuration was created
-			tomcatDir := filepath.Join(depsDir, "0", "tomcat", "apache-tomcat-9.0.0")
+			tomcatDir := filepath.Join(depsDir, "0", "tomcat")
 			contextFile := filepath.Join(tomcatDir, "conf", "Catalina", "localhost", "ROOT.xml")
 			Expect(contextFile).To(BeAnExistingFile())
 		})
