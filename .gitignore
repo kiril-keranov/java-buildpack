@@ -23,3 +23,5 @@ bin/supply
 *.md
 *.log
 scripts/integration-focus.sh
+!comparison.md
+!ruby_vs_go_buildpack_comparison.md
