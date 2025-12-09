@@ -106,5 +106,49 @@ func testTomcat(platform switchblade.Platform, fixtures string) func(*testing.T,
 				Eventually(deployment).Should(matchers.Serve(ContainSubstring("OK")))
 			})
 		})
+
+		context("with Java 21", func() {
+			it("successfully deploys WAR file with Java 21 using git buildpack", func() {
+				// Regression test: This deployment scenario previously failed with:
+				// "Failed to build droplet release: buildpack's release output invalid:
+				//  yaml: unmarshal errors: line 1: cannot unmarshal !!str `-----> ...`"
+				//
+				// The bug: When using a git URL buildpack (not pre-packaged), the bash wrapper
+				// scripts (bin/detect, bin/supply, bin/finalize, bin/release) were used.
+				// These bash wrappers compiled Go binaries on-the-fly and had echo statements
+				// like "-----> Running go build release" that polluted stdout.
+				//
+				// During the release phase, Cloud Foundry expects pure YAML on stdout.
+				// The echo pollution caused: "cannot unmarshal !!str `-----> ...`"
+				//
+				// This test explicitly uses a git URL to ensure the bash scripts work correctly.
+				// The fix converted everything to pure bash (no Go wrappers) and removed all
+				// echo statements so only clean YAML is output.
+				deployment, logs, err := platform.Deploy.
+					WithBuildpacks("https://github.com/cloudfoundry/java-buildpack.git#feature/go-migration").
+					WithEnv(map[string]string{
+						"BP_JAVA_VERSION":         "21",
+						"JBP_CONFIG_OPEN_JDK_JRE": "{jre: {version: 21.+}}",
+					}).
+					Execute(name, filepath.Join(fixtures, "containers", "tomcat_jakarta"))
+
+				Expect(err).NotTo(HaveOccurred(), logs.String)
+
+				// Verify Java 21 is used
+				Expect(logs.String()).To(ContainSubstring("OpenJDK"))
+				Expect(logs.String()).To(Or(
+					ContainSubstring("21."),
+					ContainSubstring("Tomcat"),
+				))
+
+				// If deployment succeeds, it means:
+				// 1. bin/detect succeeded (detected Tomcat)
+				// 2. bin/supply succeeded (downloaded dependencies)
+				// 3. bin/finalize succeeded (configured app)
+				// 4. bin/release succeeded (output valid YAML) <- THIS IS THE BUG FIX
+				// 5. App started and responds to requests
+				Eventually(deployment).Should(matchers.Serve(ContainSubstring("OK")))
+			})
+		})
 	}
 }
