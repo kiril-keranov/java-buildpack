@@ -11,7 +11,8 @@ import (
 
 // SpringAutoReconfigurationFramework implements Spring Auto-reconfiguration support for Cloud Foundry
 // This framework automatically reconfigures Spring applications to use Cloud Foundry services
-// Note: This is deprecated in favor of java-cfenv, but still widely used
+// DEPRECATED: This framework is disabled by default as of Dec 2025. Please migrate to java-cfenv.
+// Can be re-enabled with: JBP_CONFIG_SPRING_AUTO_RECONFIGURATION='{enabled: true}'
 type SpringAutoReconfigurationFramework struct {
 	context *Context
 }
@@ -50,7 +51,7 @@ func (s *SpringAutoReconfigurationFramework) Supply() error {
 	// Log deprecation warnings
 	if s.hasSpringCloudConnectors() {
 		s.context.Log.Warning("ATTENTION: The Spring Cloud Connectors library is present in your application. This library " +
-			"has been in maintenance mode since July 2019 and will stop receiving all updates after Mar 2024.")
+			"has been in maintenance mode since July 2019 and is no longer receiving updates.")
 		s.context.Log.Warning("Please migrate to java-cfenv immediately. See https://via.vmw.com/EiBW for migration instructions.")
 	}
 
@@ -78,14 +79,11 @@ func (s *SpringAutoReconfigurationFramework) Supply() error {
 
 	// The JAR will be added to classpath in finalize phase
 	s.context.Log.Warning("ATTENTION: The Spring Auto Reconfiguration and shaded Spring Cloud Connectors libraries are " +
-		"being installed. These projects have been deprecated, are no longer receiving updates and should " +
-		"not be used going forward.")
-	s.context.Log.Warning("If you are not using these libraries, set `JBP_CONFIG_SPRING_AUTO_RECONFIGURATION='{enabled: false}'` " +
-		"to disable their installation and clear this warning message. The buildpack will switch its default " +
-		"to disable by default after March 2023. Spring Auto Reconfiguration and its shaded Spring Cloud " +
-		"Connectors will be removed from the buildpack after March 2024.")
-	s.context.Log.Warning("If you are using these libraries, please migrate to java-cfenv immediately. " +
-		"See https://via.vmw.com/EiBW for migration instructions. Once you upgrade this message will go away.")
+		"being installed. These projects have been deprecated and are no longer receiving updates.")
+	s.context.Log.Warning("Spring Auto Reconfiguration is now DISABLED BY DEFAULT. You have explicitly enabled it via " +
+		"`JBP_CONFIG_SPRING_AUTO_RECONFIGURATION='{enabled: true}'`. Please migrate to java-cfenv as soon as possible.")
+	s.context.Log.Warning("For migration instructions, see https://via.vmw.com/EiBW. Once you migrate to java-cfenv, " +
+		"these warnings will disappear.")
 
 	s.context.Log.Info("Installed Spring Auto-reconfiguration version %s", dep.Version)
 	return nil
@@ -136,8 +134,8 @@ func (s *SpringAutoReconfigurationFramework) isEnabled() bool {
 		return false
 	}
 
-	// Default to enabled (for now, will be disabled by default after March 2023)
-	return true
+	// Default to disabled (changed Dec 2025 - deprecated since July 2019)
+	return false
 }
 
 // hasSpring checks if Spring Core is present in the application

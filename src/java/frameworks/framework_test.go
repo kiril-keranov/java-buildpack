@@ -705,6 +705,10 @@ func TestSpringAutoReconfigurationDetect(t *testing.T) {
 	manifest := &libbuildpack.Manifest{}
 	stager := libbuildpack.NewStager([]string{tmpDir, "", "0"}, logger, manifest)
 
+	// Enable Spring Auto-reconfiguration explicitly (now disabled by default)
+	os.Setenv("JBP_CONFIG_SPRING_AUTO_RECONFIGURATION", "{enabled: true}")
+	defer os.Unsetenv("JBP_CONFIG_SPRING_AUTO_RECONFIGURATION")
+
 	ctx := &frameworks.Context{
 		Stager:   stager,
 		Manifest: manifest,
@@ -713,7 +717,7 @@ func TestSpringAutoReconfigurationDetect(t *testing.T) {
 
 	framework := frameworks.NewSpringAutoReconfigurationFramework(ctx)
 
-	// Should detect Spring application
+	// Should detect Spring application when explicitly enabled
 	name, err := framework.Detect()
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
