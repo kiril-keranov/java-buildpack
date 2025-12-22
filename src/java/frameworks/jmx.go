@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"strconv"
 )
@@ -91,7 +91,7 @@ func (j *JmxFramework) isEnabled() bool {
 		}
 	}
 
-	// Default to disabled (as per config/jmx.yml)
+	// Default to disabled (matches Ruby buildpack default)
 	return false
 }
 

@@ -329,17 +329,7 @@ func (j *JavaOptsFramework) loadConfig() (*JavaOptsConfig, error) {
 		return config, nil
 	}
 
-	// Load from config file (java_opts.yml)
-	configPath := j.context.Manifest.RootDir() + "/config/java_opts.yml"
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		// Config file not found is OK - use defaults
-		return config, nil
-	}
-
-	if err := yaml.Unmarshal(data, config); err != nil {
-		return nil, fmt.Errorf("failed to parse java_opts.yml: %w", err)
-	}
-
+	// No config file - use built-in defaults
+	// (The Ruby buildpack's config/java_opts.yml only contained these same defaults)
 	return config, nil
 }

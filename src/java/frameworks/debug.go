@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"strconv"
 )
@@ -100,7 +100,7 @@ func (d *DebugFramework) isEnabled() bool {
 		}
 	}
 
-	// Default to disabled (as per config/debug.yml)
+	// Default to disabled (matches Ruby buildpack default)
 	return false
 }
 
