@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"strings"
 	"unicode"
@@ -80,16 +80,20 @@ func (j *JavaOptsFramework) Finalize() error {
 	// Write user-defined JAVA_OPTS to .opts file with priority 99 (Ruby buildpack line 82)
 	// This ensures user opts run LAST, allowing them to override framework defaults
 	//
-	// Handle from_environment setting:
-	// - If true: prepend $JAVA_OPTS (from environment) before user opts
+	// Handle from_environment setting (matching Ruby buildpack order):
+	// - If true: configured opts FIRST, then append $JAVA_OPTS (allows environment to override config)
 	// - If false: only use configured opts (ignore environment JAVA_OPTS)
+	//
+	// Ruby buildpack order (lines 39-44):
+	//   configured.shellsplit.map {...}.each { |java_opt| @droplet.java_opts << java_opt }
+	//   @droplet.java_opts << '$JAVA_OPTS' if from_environment?
 	var finalOpts string
 	if config.FromEnvironment {
-		// Preserve user's JAVA_OPTS from environment and append configured opts
+		// Add configured opts first, then environment JAVA_OPTS (Ruby order)
 		if optsString != "" {
-			finalOpts = fmt.Sprintf("$JAVA_OPTS %s", optsString)
+			finalOpts = fmt.Sprintf("%s $JAVA_OPTS", optsString)
 		} else {
-			// No configured opts, use environment JAVA_OPTS
+			// No configured opts, use only environment JAVA_OPTS
 			finalOpts = "$JAVA_OPTS"
 		}
 	} else {
