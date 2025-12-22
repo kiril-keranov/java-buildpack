@@ -16,8 +16,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 
@@ -117,12 +117,15 @@ func (f *SealightsAgentFramework) Finalize() error {
 		}
 	}
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := f.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path
 	relPath, err := filepath.Rel(f.context.Stager.DepDir(), agentPath)
 	if err != nil {
 		return fmt.Errorf("failed to compute relative path: %w", err)
 	}
-	runtimeAgentPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeAgentPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Get service credentials
 	vcapServices, err := GetVCAPServices()
@@ -165,7 +168,7 @@ func (f *SealightsAgentFramework) Finalize() error {
 	}
 
 	// Set log folder to runtime deps directory
-	systemProps += " -Dsl.log.folder=$DEPS_DIR/0/sealights_logs"
+	systemProps += fmt.Sprintf(" -Dsl.log.folder=$DEPS_DIR/%s/sealights_logs", depsIdx)
 
 	// Build javaagent argument
 	javaAgent := fmt.Sprintf("-javaagent:%s", runtimeAgentPath)

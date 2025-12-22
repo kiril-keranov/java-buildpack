@@ -109,8 +109,9 @@ func (t *TomcatContainer) Supply() error {
 
 	t.context.Log.Info("Installed Tomcat version %s", dep.Version)
 
-	// Write profile.d script to set CATALINA_HOME, CATALINA_BASE, and JAVA_OPTS at runtime
+	// Get buildpack index for multi-buildpack support
 	depsIdx := t.context.Stager.DepsIdx()
+	// Write profile.d script to set CATALINA_HOME, CATALINA_BASE, and JAVA_OPTS at runtime
 	tomcatPath := fmt.Sprintf("$DEPS_DIR/%s/tomcat", depsIdx)
 
 	// Determine access logging configuration (default: disabled, matching Ruby buildpack)
@@ -253,7 +254,7 @@ func (t *TomcatContainer) createSetenvScript(tomcatDir, loggingSupportJar string
 	setenvPath := filepath.Join(binDir, "setenv.sh")
 
 	// Build the runtime path to the logging JAR
-	// At runtime, CATALINA_HOME points to $DEPS_DIR/0/tomcat
+	// At runtime, CATALINA_HOME points to $DEPS_DIR/<idx>/tomcat
 	jarPath := "$CATALINA_HOME/bin/" + loggingSupportJar
 
 	// Create setenv.sh content that adds logging JAR to CLASSPATH

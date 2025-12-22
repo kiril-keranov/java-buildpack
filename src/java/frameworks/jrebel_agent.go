@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 )
@@ -95,6 +95,9 @@ func (j *JRebelAgentFramework) Finalize() error {
 		return nil
 	}
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := j.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path using $DEPS_DIR
 	// Extract the relative path from the absolute staging path
 	frameworkDir := filepath.Join(j.context.Stager.DepDir(), "jrebel")
@@ -103,7 +106,7 @@ func (j *JRebelAgentFramework) Finalize() error {
 		j.context.Log.Warning("Failed to determine relative path for JRebel agent: %s", err)
 		return nil
 	}
-	runtimeAgentPath := fmt.Sprintf("$DEPS_DIR/0/jrebel/%s", relPath)
+	runtimeAgentPath := fmt.Sprintf("$DEPS_DIR/%s/jrebel/%s", depsIdx, relPath)
 
 	// Write JAVA_OPTS to .opts file with priority 31 (Ruby buildpack line 65)
 	// This ensures JRebel runs AFTER Container Security Provider (priority 17)

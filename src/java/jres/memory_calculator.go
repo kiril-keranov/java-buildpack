@@ -351,9 +351,9 @@ func (m *MemoryCalculator) GetCalculatorCommand() string {
 func (m *MemoryCalculator) convertToRuntimePath(stagingPath string) string {
 	depsIdx := m.ctx.Stager.DepsIdx()
 
-	// Extract the relative path from deps/X/ onwards
-	// stagingPath: /tmp/.../deps/0/jre/bin/java-buildpack-memory-calculator-X.X.X
-	// We want: /home/vcap/deps/0/jre/bin/java-buildpack-memory-calculator-X.X.X
+	// Extract the relative path from deps/<idx>/ onwards
+	// stagingPath: /tmp/.../deps/<idx>/jre/bin/java-buildpack-memory-calculator-X.X.X
+	// We want: /home/vcap/deps/<idx>/jre/bin/java-buildpack-memory-calculator-X.X.X
 
 	// Find "jre/bin/" in the path
 	if idx := strings.Index(stagingPath, "jre/bin/"); idx != -1 {

@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"path/filepath"
 
 	"github.com/cloudfoundry/libbuildpack"
@@ -72,8 +72,11 @@ func (o *OpenTelemetryJavaagentFramework) Supply() error {
 
 // Finalize performs final OpenTelemetry configuration
 func (o *OpenTelemetryJavaagentFramework) Finalize() error {
+	// Get buildpack index for multi-buildpack support
+	depsIdx := o.context.Stager.DepsIdx()
+
 	// Build runtime agent path
-	agentJar := "$DEPS_DIR/0/open_telemetry_javaagent/opentelemetry-javaagent.jar"
+	agentJar := fmt.Sprintf("$DEPS_DIR/%s/open_telemetry_javaagent/opentelemetry-javaagent.jar", depsIdx)
 
 	// Add javaagent to JAVA_OPTS
 	javaOpts := fmt.Sprintf("-javaagent:%s", agentJar)

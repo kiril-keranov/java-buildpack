@@ -133,6 +133,9 @@ func (p *ProtectAppSecurityProviderFramework) Finalize() error {
 		return fmt.Errorf("failed to process trusted certificates: %w", err)
 	}
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := p.context.Stager.DepsIdx()
+
 	// Get version for JAR name
 	dep, err := p.context.Manifest.DefaultVersion("protect-app-security-provider")
 	if err != nil {
@@ -140,7 +143,7 @@ func (p *ProtectAppSecurityProviderFramework) Finalize() error {
 	}
 
 	// Build runtime paths
-	runtimeProtectAppDir := "$DEPS_DIR/0/protect_app_security_provider"
+	runtimeProtectAppDir := fmt.Sprintf("$DEPS_DIR/%s/protect_app_security_provider", depsIdx)
 	runtimeKeystorePath := filepath.Join(runtimeProtectAppDir, "nae-keystore.jks")
 	runtimeProtectAppJar := filepath.Join(runtimeProtectAppDir, "ext", fmt.Sprintf("IngrianNAE-%s.000.jar", dep.Version))
 

@@ -16,9 +16,9 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"encoding/json"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -82,12 +82,15 @@ func (i *IntroscopeAgentFramework) Finalize() error {
 
 	i.context.Log.BeginStep("Configuring Introscope agent")
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := i.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path
 	relPath, err := filepath.Rel(i.context.Stager.DepDir(), i.agentPath)
 	if err != nil {
 		return fmt.Errorf("failed to determine relative path for Introscope agent: %w", err)
 	}
-	runtimeJarPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeJarPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Get credentials from service binding
 	credentials := i.getCredentials()
@@ -238,4 +241,3 @@ func (i *IntroscopeAgentFramework) getApplicationName() string {
 
 	return ""
 }
-

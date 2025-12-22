@@ -109,6 +109,8 @@ func (a *AppDynamicsFramework) installDefaultConfiguration(agentDir string) erro
 
 // Finalize configures AppDynamics agent for runtime
 func (a *AppDynamicsFramework) Finalize() error {
+	// Get buildpack index for multi-buildpack support
+	depsIdx := a.context.Stager.DepsIdx()
 
 	// Find the actual AppDynamics agent jar at staging time
 	agentDir := filepath.Join(a.context.Stager.DepDir(), "app_dynamics_agent")
@@ -123,7 +125,7 @@ func (a *AppDynamicsFramework) Finalize() error {
 	if err != nil {
 		return fmt.Errorf("failed to compute relative path: %w", err)
 	}
-	runtimeAgentPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeAgentPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Get AppDynamics configuration from service binding
 	vcapServices, _ := GetVCAPServices()

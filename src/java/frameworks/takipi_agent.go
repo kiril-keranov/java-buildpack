@@ -16,8 +16,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 
@@ -98,12 +98,15 @@ func (f *TakipiAgentFramework) Finalize() error {
 		return fmt.Errorf("takipi agent not found at %s: %w", agentPath, err)
 	}
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := f.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path
 	relPath, err := filepath.Rel(f.context.Stager.DepDir(), agentPath)
 	if err != nil {
 		return fmt.Errorf("failed to compute relative path: %w", err)
 	}
-	runtimeAgentPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeAgentPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Get service credentials
 	vcapServices, err := GetVCAPServices()
@@ -144,8 +147,8 @@ func (f *TakipiAgentFramework) Finalize() error {
 	}
 
 	// Set environment variables via profile.d (LD_LIBRARY_PATH and Takipi-specific vars)
-	libPath := "$DEPS_DIR/0/takipi/lib"
-	runtimeInstallDir := "$DEPS_DIR/0/takipi"
+	libPath := fmt.Sprintf("$DEPS_DIR/%s/takipi/lib", depsIdx)
+	runtimeInstallDir := fmt.Sprintf("$DEPS_DIR/%s/takipi", depsIdx)
 
 	profileContent := fmt.Sprintf(`export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:%s"
 export TAKIPI_HOME="%s"

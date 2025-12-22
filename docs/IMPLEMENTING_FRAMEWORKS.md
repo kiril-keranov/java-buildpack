@@ -282,11 +282,12 @@ func (m *MyFramework) Finalize() error {
     jarPath := filepath.Join(frameworkDir, "my-agent.jar")
     
     // Write profile.d script to configure at runtime
+    depsIdx := m.context.Stager.DepsIdx()
     profileScript := fmt.Sprintf(`#!/bin/bash
 # My Framework Configuration
-export MY_FRAMEWORK_HOME="$DEPS_DIR/0/my_framework"
+export MY_FRAMEWORK_HOME="$DEPS_DIR/%s/my_framework"
 export JAVA_OPTS="${JAVA_OPTS} -javaagent:%s"
-`, jarPath)
+`, depsIdx, jarPath)
     
     if err := m.context.Stager.WriteProfileD("my_framework.sh", profileScript); err != nil {
         return fmt.Errorf("failed to write profile.d script: %w", err)
@@ -612,8 +613,9 @@ func (c *ContainerCustomizerFramework) Finalize() error {
     }
     
     // Create runtime path (using $DEPS_DIR variable)
+    depsIdx := c.context.Stager.DepsIdx()
     relPath := filepath.Base(matches[0])
-    runtimePath := fmt.Sprintf("$DEPS_DIR/0/container_customizer/%s", relPath)
+    runtimePath := fmt.Sprintf("$DEPS_DIR/%s/container_customizer/%s", depsIdx, relPath)
     
     // Write profile.d script to add to classpath
     profileScript := fmt.Sprintf(`# Container Customizer Framework
@@ -849,7 +851,8 @@ Profile.d scripts run before the application starts:
 
 ```go
 func (f *MyFramework) Finalize() error {
-    script := `#!/bin/bash
+    depsIdx := f.context.Stager.DepsIdx()
+    script := fmt.Sprintf(`#!/bin/bash
 # My Framework Configuration
 
 # Set environment variables
@@ -859,8 +862,8 @@ export MY_VAR="value"
 export JAVA_OPTS="${JAVA_OPTS} -Dmy.property=value"
 
 # Add to classpath
-export CLASSPATH="$DEPS_DIR/0/my_framework/lib/*:${CLASSPATH}"
-`
+export CLASSPATH="$DEPS_DIR/%s/my_framework/lib/*:${CLASSPATH}"
+`, depsIdx)
     
     return f.context.Stager.WriteProfileD("my_framework.sh", script)
 }
@@ -914,8 +917,9 @@ Convert staging paths to runtime paths using environment variables:
 
 ```go
 // During Finalize, use runtime path variables
-stagingPath := "/tmp/staging/deps/0/my_framework/lib.jar"
-runtimePath := "$DEPS_DIR/0/my_framework/lib.jar"
+depsIdx := f.context.Stager.DepsIdx()
+stagingPath := "/tmp/staging/deps/<idx>/my_framework/lib.jar"
+runtimePath := fmt.Sprintf("$DEPS_DIR/%s/my_framework/lib.jar", depsIdx)
 
 // Use runtimePath in profile.d scripts
 profileScript := fmt.Sprintf("export CLASSPATH=%s:$CLASSPATH", runtimePath)
@@ -1201,7 +1205,7 @@ ctx.Log.Info("API Key configured")
 **Check:**
 1. View environment: `cf ssh my-app` then `env`
 2. Check JAVA_OPTS: `cf ssh my-app` then `echo $JAVA_OPTS`
-3. Verify files exist: `cf ssh my-app` then `ls $DEPS_DIR/0/my_framework/`
+3. Verify files exist: `cf ssh my-app` then `ls $DEPS_DIR/<idx>/my_framework/` (where <idx> is the buildpack index)
 4. Check application logs: `cf logs my-app`
 
 ### Testing Issues

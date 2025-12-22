@@ -75,10 +75,13 @@ func (j *JavaMemoryAssistantFramework) Finalize() error {
 		return fmt.Errorf("Java Memory Assistant JAR not found")
 	}
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := j.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path
-	// Runtime: $DEPS_DIR/0/java_memory_assistant/java-memory-assistant-x.x.x.jar
+	// Runtime: $DEPS_DIR/<idx>/java_memory_assistant/java-memory-assistant-x.x.x.jar
 	relPath := filepath.Base(matches[0])
-	runtimeAgentPath := fmt.Sprintf("$DEPS_DIR/0/java_memory_assistant/%s", relPath)
+	runtimeAgentPath := fmt.Sprintf("$DEPS_DIR/%s/java_memory_assistant/%s", depsIdx, relPath)
 
 	// Build agent configuration
 	agentConfig := j.buildAgentConfig()

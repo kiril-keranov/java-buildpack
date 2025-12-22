@@ -92,6 +92,9 @@ func (f *JProfilerProfilerFramework) findJProfilerAgent(installDir string) (stri
 func (f *JProfilerProfilerFramework) Finalize() error {
 	f.context.Log.Debug("JProfiler Profiler Finalize phase")
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := f.context.Stager.DepsIdx()
+
 	installDir := filepath.Join(f.context.Stager.DepDir(), "jprofiler_profiler")
 
 	// Find the native library (libjprofilerti.so in bin/linux-x64/)
@@ -106,7 +109,7 @@ func (f *JProfilerProfilerFramework) Finalize() error {
 	if err != nil {
 		return fmt.Errorf("failed to compute relative path: %w", err)
 	}
-	runtimeAgentPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeAgentPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Build agent options
 	// Default options: port=8849, nowait (don't wait for profiler UI to connect)

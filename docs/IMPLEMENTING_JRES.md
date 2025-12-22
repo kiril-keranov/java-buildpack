@@ -1035,10 +1035,12 @@ if err := WriteJavaHomeProfileD(ctx, jreDir, javaHome); err != nil {
 
 This creates `.profile.d/java.sh`:
 ```bash
-export JAVA_HOME=$DEPS_DIR/0/jre/jdk-17.0.13
-export JRE_HOME=$DEPS_DIR/0/jre/jdk-17.0.13
+export JAVA_HOME=$DEPS_DIR/<idx>/jre/jdk-17.0.13
+export JRE_HOME=$DEPS_DIR/<idx>/jre/jdk-17.0.13
 export PATH=$JAVA_HOME/bin:$PATH
 ```
+
+Where `<idx>` is the buildpack index (0 for standalone usage, or the position in multi-buildpack chain).
 
 ### Adding JVM Options
 
@@ -1530,8 +1532,9 @@ DescribeTable("supports multiple versions",
 **Solution:**
 1. Verify calculator installed:
    ```bash
-   ls $DEPS_DIR/0/jre/bin/java-buildpack-memory-calculator-*
+   ls $DEPS_DIR/<idx>/jre/bin/java-buildpack-memory-calculator-*
    ```
+   (where <idx> is the buildpack index)
 
 2. Check class counting:
    ```go

@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,9 +107,12 @@ func (m *MetricWriterFramework) Finalize() error {
 		return nil
 	}
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := m.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path for CLASSPATH
 	relPath := filepath.Base(matches[0])
-	runtimePath := fmt.Sprintf("$DEPS_DIR/0/metric_writer/%s", relPath)
+	runtimePath := fmt.Sprintf("$DEPS_DIR/%s/metric_writer/%s", depsIdx, relPath)
 
 	// Build CloudFoundry tag environment variables
 	cfTags := m.buildCFTagEnvVars()

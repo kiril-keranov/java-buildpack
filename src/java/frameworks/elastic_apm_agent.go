@@ -16,9 +16,9 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"encoding/json"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -96,13 +96,16 @@ func (e *ElasticApmAgentFramework) Finalize() error {
 
 	e.context.Log.BeginStep("Configuring Elastic APM agent")
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := e.context.Stager.DepsIdx()
+
 	// Convert staging paths to runtime paths
 	relJarPath, err := filepath.Rel(e.context.Stager.DepDir(), e.jarPath)
 	if err != nil {
 		return fmt.Errorf("failed to determine relative path for Elastic APM agent: %w", err)
 	}
-	runtimeJarPath := filepath.Join("$DEPS_DIR/0", relJarPath)
-	runtimeHomeDir := "$DEPS_DIR/0/elastic_apm_agent"
+	runtimeJarPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relJarPath)
+	runtimeHomeDir := fmt.Sprintf("$DEPS_DIR/%s/elastic_apm_agent", depsIdx)
 
 	// Build configuration map
 	config := e.buildConfiguration()

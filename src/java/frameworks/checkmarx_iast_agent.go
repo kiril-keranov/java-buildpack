@@ -16,8 +16,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"io"
 	"net/http"
 	"os"
@@ -94,12 +94,15 @@ func (c *CheckmarxIASTAgentFramework) Finalize() error {
 
 	c.context.Log.BeginStep("Configuring Checkmarx IAST agent")
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := c.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path
 	relPath, err := filepath.Rel(c.context.Stager.DepDir(), c.jarPath)
 	if err != nil {
 		return fmt.Errorf("failed to determine relative path for Checkmarx IAST agent: %w", err)
 	}
-	runtimeJarPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeJarPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Build all JAVA_OPTS options
 	var opts []string

@@ -100,16 +100,19 @@ func (f *YourKitProfilerFramework) Finalize() error {
 	}
 	f.context.Log.Debug("Found YourKit agent at: %s", agentPath)
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := f.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path
 	relPath, err := filepath.Rel(f.context.Stager.DepDir(), agentPath)
 	if err != nil {
 		return fmt.Errorf("failed to compute relative path: %w", err)
 	}
-	runtimeAgentPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeAgentPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Build agent options
 	// Default options: dir=<home>/yourkit, logdir=<home>/yourkit, port=10001, sessionname=<space>:<app>
-	runtimeHomeDir := "$DEPS_DIR/0/yourkit"
+	runtimeHomeDir := fmt.Sprintf("$DEPS_DIR/%s/yourkit", depsIdx)
 
 	// Create home directory at staging time
 	homeDir := filepath.Join(f.context.Stager.DepDir(), "yourkit")

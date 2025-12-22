@@ -116,8 +116,11 @@ func (l *LunaSecurityProviderFramework) installDefaultConfiguration(lunaDir stri
 
 // Finalize configures the Luna security provider for runtime
 func (l *LunaSecurityProviderFramework) Finalize() error {
+	// Get buildpack index for multi-buildpack support
+	depsIdx := l.context.Stager.DepsIdx()
+
 	// Set ChrystokiConfigurationPath environment variable with runtime path
-	if err := l.context.Stager.WriteEnvFile("ChrystokiConfigurationPath", "$DEPS_DIR/0/luna_security_provider"); err != nil {
+	if err := l.context.Stager.WriteEnvFile("ChrystokiConfigurationPath", fmt.Sprintf("$DEPS_DIR/%s/luna_security_provider", depsIdx)); err != nil {
 		return fmt.Errorf("failed to set ChrystokiConfigurationPath: %w", err)
 	}
 
@@ -131,8 +134,8 @@ func (l *LunaSecurityProviderFramework) Finalize() error {
 	var javaOpts string
 	if javaVersion >= 9 {
 		// Java 9+: Add to bootstrap classpath and set LD_LIBRARY_PATH
-		lunaProviderJar := "$DEPS_DIR/0/luna_security_provider/jsp/LunaProvider.jar"
-		ldLibPath := "$DEPS_DIR/0/luna_security_provider/jsp/64"
+		lunaProviderJar := fmt.Sprintf("$DEPS_DIR/%s/luna_security_provider/jsp/LunaProvider.jar", depsIdx)
+		ldLibPath := fmt.Sprintf("$DEPS_DIR/%s/luna_security_provider/jsp/64", depsIdx)
 
 		// Build JAVA_OPTS with runtime path
 		javaOpts = fmt.Sprintf("-Xbootclasspath/a:%s", lunaProviderJar)
@@ -149,7 +152,7 @@ func (l *LunaSecurityProviderFramework) Finalize() error {
 		}
 	} else {
 		// Java 8: Use extension directory
-		extDir := "$DEPS_DIR/0/luna_security_provider/ext"
+		extDir := fmt.Sprintf("$DEPS_DIR/%s/luna_security_provider/ext", depsIdx)
 		javaOpts = fmt.Sprintf("-Djava.ext.dirs=%s:$JAVA_HOME/jre/lib/ext:$JAVA_HOME/lib/ext", extDir)
 	}
 

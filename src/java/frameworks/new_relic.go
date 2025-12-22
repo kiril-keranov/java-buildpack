@@ -122,6 +122,9 @@ func (n *NewRelicFramework) installDefaultConfiguration(agentDir string) error {
 
 // Finalize performs final New Relic configuration
 func (n *NewRelicFramework) Finalize() error {
+	// Get buildpack index for multi-buildpack support
+	depsIdx := n.context.Stager.DepsIdx()
+
 	// Find the actual New Relic agent jar at staging time
 	agentDir := filepath.Join(n.context.Stager.DepDir(), "new_relic_agent")
 	agentJarPath, err := n.findNewRelicAgent(agentDir)
@@ -134,7 +137,7 @@ func (n *NewRelicFramework) Finalize() error {
 	if err != nil {
 		return fmt.Errorf("failed to compute relative path: %w", err)
 	}
-	runtimeAgentPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeAgentPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Add javaagent to JAVA_OPTS
 	javaOpts := fmt.Sprintf("-javaagent:%s", runtimeAgentPath)

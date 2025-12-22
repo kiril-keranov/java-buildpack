@@ -148,8 +148,8 @@ func (j *JVMKillAgent) Finalize() error {
 	j.ctx.Log.Debug("JVMKill agent staging path: %s", j.agentPath)
 
 	// Convert absolute staging path to runtime-relative path
-	// Staging path: /tmp/contents.../deps/0/jre/bin/jvmkill-1.16.0.so
-	// Runtime path: $DEPS_DIR/0/jre/bin/jvmkill-1.16.0.so
+	// Staging path: /tmp/contents.../deps/<idx>/jre/bin/jvmkill-1.16.0.so
+	// Runtime path: $DEPS_DIR/<idx>/jre/bin/jvmkill-1.16.0.so
 	runtimeAgentPath := j.convertToRuntimePath(j.agentPath)
 	j.ctx.Log.Debug("JVMKill agent runtime path: %s", runtimeAgentPath)
 
@@ -179,7 +179,7 @@ func (j *JVMKillAgent) Finalize() error {
 }
 
 // convertToRuntimePath converts absolute staging path to runtime absolute path
-// Example: /tmp/contents.../deps/0/jre/bin/jvmkill-1.16.0.so -> /home/vcap/deps/0/jre/bin/jvmkill-1.16.0.so
+// Example: /tmp/contents.../deps/<idx>/jre/bin/jvmkill-1.16.0.so -> /home/vcap/deps/<idx>/jre/bin/jvmkill-1.16.0.so
 // Note: We use absolute path instead of $DEPS_DIR because startup scripts run before .profile.d scripts
 // are sourced, so $DEPS_DIR is not yet available at runtime.
 func (j *JVMKillAgent) convertToRuntimePath(stagingPath string) string {

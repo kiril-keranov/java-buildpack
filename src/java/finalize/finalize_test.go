@@ -159,7 +159,7 @@ dependencies: []
 			Expect(os.MkdirAll(profileDir, 0755)).To(Succeed())
 
 			javaScript := filepath.Join(profileDir, "java.sh")
-			scriptContent := "export JAVA_HOME=$DEPS_DIR/0/jre\n"
+			scriptContent := "export JAVA_HOME=$DEPS_DIR/" + depsIdx + "/jre\n"
 			Expect(os.WriteFile(javaScript, []byte(scriptContent), 0755)).To(Succeed())
 			Expect(javaScript).To(BeAnExistingFile())
 		})

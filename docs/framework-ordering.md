@@ -63,7 +63,7 @@ In the Go buildpack, we implement this ordering using numbered `.opts` files:
 
 ### Directory Structure
 ```
-$DEPS_DIR/0/
+$DEPS_DIR/<idx>/
   java_opts/
     05_jre.opts                  # JRE base options (memory calculator, JVMKill, etc.)
     17_container_security.opts   # Container Security Provider (Line 51)
@@ -73,6 +73,8 @@ $DEPS_DIR/0/
     99_user_java_opts.opts       # User-defined JAVA_OPTS (Line 82, ALWAYS LAST)
 ```
 
+Where `<idx>` is the buildpack index (0 for standalone usage, or the position in multi-buildpack chain).
+
 ### Assembly at Runtime
 
 A single `profile.d/00_java_opts.sh` script reads all `.opts` files in order:
@@ -80,7 +82,7 @@ A single `profile.d/00_java_opts.sh` script reads all `.opts` files in order:
 ```bash
 #!/bin/bash
 export JAVA_OPTS=""
-for opts_file in $DEPS_DIR/0/java_opts/*.opts; do
+for opts_file in $DEPS_DIR/<idx>/java_opts/*.opts; do
     if [ -f "$opts_file" ]; then
         JAVA_OPTS="$JAVA_OPTS $(cat $opts_file)"
     fi

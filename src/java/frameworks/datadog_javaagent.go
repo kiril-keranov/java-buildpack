@@ -16,10 +16,10 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"archive/zip"
 	"encoding/json"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -125,12 +125,15 @@ func (d *DatadogJavaagentFramework) Finalize() error {
 
 	d.context.Log.BeginStep("Configuring Datadog Java agent")
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := d.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path
 	relPath, err := filepath.Rel(d.context.Stager.DepDir(), d.jarPath)
 	if err != nil {
 		return fmt.Errorf("failed to determine relative path for Datadog agent: %w", err)
 	}
-	runtimeJarPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeJarPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Build all JAVA_OPTS options
 	var opts []string

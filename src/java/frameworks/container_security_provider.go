@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,21 +69,24 @@ func (c *ContainerSecurityProviderFramework) Finalize() error {
 		javaVersion = 8
 	}
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := c.context.Stager.DepsIdx()
+
 	// Build JAVA_OPTS with runtime paths using $DEPS_DIR
 	var javaOpts string
 	if javaVersion >= 9 {
 		// Java 9+: Add to bootstrap classpath via -Xbootclasspath/a
-		runtimeJarPath := fmt.Sprintf("$DEPS_DIR/0/container_security_provider/%s", jarFilename)
+		runtimeJarPath := fmt.Sprintf("$DEPS_DIR/%s/container_security_provider/%s", depsIdx, jarFilename)
 		javaOpts = fmt.Sprintf("-Xbootclasspath/a:%s", runtimeJarPath)
 	} else {
 		// Java 8: Use extension directory
-		runtimeProviderDir := "$DEPS_DIR/0/container_security_provider"
+		runtimeProviderDir := fmt.Sprintf("$DEPS_DIR/%s/container_security_provider", depsIdx)
 		javaOpts = fmt.Sprintf("-Djava.ext.dirs=%s:$JAVA_HOME/jre/lib/ext:$JAVA_HOME/lib/ext", runtimeProviderDir)
 	}
 
 	// Add security provider to java.security.properties
 	// Insert at position 1 (after default providers)
-	runtimeSecurityFile := "$DEPS_DIR/0/container_security_provider/java.security"
+	runtimeSecurityFile := fmt.Sprintf("$DEPS_DIR/%s/container_security_provider/java.security", depsIdx)
 	securityProvider := fmt.Sprintf("-Djava.security.properties=%s", runtimeSecurityFile)
 	javaOpts += " " + securityProvider
 

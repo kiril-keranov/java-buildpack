@@ -133,18 +133,21 @@ func (c *ContrastSecurityAgentFramework) Finalize() error {
 		}
 	}
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := c.context.Stager.DepsIdx()
+
 	// Convert staging paths to runtime paths using $DEPS_DIR
 	agentRelPath, err := filepath.Rel(c.context.Stager.DepDir(), c.agentJarPath)
 	if err != nil {
 		return fmt.Errorf("failed to compute relative path for agent jar: %w", err)
 	}
-	runtimeAgentPath := filepath.Join("$DEPS_DIR/0", agentRelPath)
+	runtimeAgentPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), agentRelPath)
 
 	configRelPath, err := filepath.Rel(c.context.Stager.DepDir(), c.configPath)
 	if err != nil {
 		return fmt.Errorf("failed to compute relative path for config: %w", err)
 	}
-	runtimeConfigPath := filepath.Join("$DEPS_DIR/0", configRelPath)
+	runtimeConfigPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), configRelPath)
 
 	// Build JAVA_OPTS with javaagent and system properties using runtime paths
 	javaOpts := fmt.Sprintf("-javaagent:%s=%s -Dcontrast.dir=$TMPDIR", runtimeAgentPath, runtimeConfigPath)

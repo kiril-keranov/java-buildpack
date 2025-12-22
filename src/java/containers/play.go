@@ -1,8 +1,8 @@
 package containers
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -426,7 +426,7 @@ func (p *PlayContainer) collectAdditionalLibraries() []string {
 	var libs []string
 	depsDir := p.context.Stager.DepDir()
 
-	// Scan $DEPS_DIR/0/ for all framework directories
+	// Scan $DEPS_DIR/<idx>/ for all framework directories
 	entries, err := os.ReadDir(depsDir)
 	if err != nil {
 		p.context.Log.Debug("Unable to read deps directory: %s", err.Error())
@@ -464,12 +464,13 @@ func (p *PlayContainer) collectAdditionalLibraries() []string {
 }
 
 // buildRuntimeClasspath converts staging-time library paths to runtime paths
-// At staging time, libraries are in $DEPS_DIR/0/<framework>/*.jar
-// At runtime, they'll be in /home/vcap/deps/0/<framework>/*.jar
+// At staging time, libraries are in $DEPS_DIR/<idx>/<framework>/*.jar
+// At runtime, they'll be in /home/vcap/deps/<idx>/<framework>/*.jar
 func (p *PlayContainer) buildRuntimeClasspath(libs []string) []string {
 	var classpathParts []string
 	depsDir := p.context.Stager.DepDir()
 	buildDir := p.context.Stager.BuildDir()
+	depsIdx := p.context.Stager.DepsIdx()
 
 	for _, lib := range libs {
 		var runtimePath string
@@ -483,7 +484,7 @@ func (p *PlayContainer) buildRuntimeClasspath(libs []string) []string {
 				continue
 			}
 			relPath = filepath.ToSlash(relPath)
-			runtimePath = fmt.Sprintf("$DEPS_DIR/%s", relPath)
+			runtimePath = fmt.Sprintf("$DEPS_DIR/%s/%s", depsIdx, relPath)
 		} else if strings.HasPrefix(lib, buildDir) {
 			// Convert to runtime $HOME path
 			relPath, err := filepath.Rel(buildDir, lib)

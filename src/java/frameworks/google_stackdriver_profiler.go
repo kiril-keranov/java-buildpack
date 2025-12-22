@@ -16,9 +16,9 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"encoding/json"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -102,12 +102,15 @@ func (g *GoogleStackdriverProfilerFramework) Finalize() error {
 
 	g.context.Log.BeginStep("Configuring Google Stackdriver Profiler")
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := g.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path
 	relPath, err := filepath.Rel(g.context.Stager.DepDir(), g.agentPath)
 	if err != nil {
 		return fmt.Errorf("failed to determine relative path for Google Stackdriver Profiler: %w", err)
 	}
-	runtimeAgentPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeAgentPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Get credentials
 	credentials := g.getCredentials()

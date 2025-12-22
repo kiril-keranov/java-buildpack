@@ -1,8 +1,8 @@
 package containers
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -233,6 +233,7 @@ export PATH=$DIST_ZIP_BIN:$PATH
 func (d *DistZipContainer) buildRuntimeClasspath(libs []string) []string {
 	depsDir := d.context.Stager.DepDir()
 	buildDir := d.context.Stager.BuildDir()
+	depsIdx := d.context.Stager.DepsIdx()
 	var classpathParts []string
 
 	for _, lib := range libs {
@@ -241,12 +242,12 @@ func (d *DistZipContainer) buildRuntimeClasspath(libs []string) []string {
 		// Check if library is in deps directory (e.g., framework JARs, agents)
 		if strings.HasPrefix(lib, depsDir) {
 			// Convert staging absolute path to runtime path
-			// Staging: /tmp/staging/deps/0/new_relic_agent/newrelic.jar
-			// Runtime: $DEPS_DIR/0/new_relic_agent/newrelic.jar
+			// Staging: /tmp/staging/deps/<idx>/new_relic_agent/newrelic.jar
+			// Runtime: $DEPS_DIR/<idx>/new_relic_agent/newrelic.jar
 			relPath := strings.TrimPrefix(lib, depsDir)
 			relPath = strings.TrimPrefix(relPath, "/") // Remove leading slash
 			relPath = filepath.ToSlash(relPath)        // Normalize slashes
-			runtimePath = fmt.Sprintf("$DEPS_DIR/0/%s", relPath)
+			runtimePath = fmt.Sprintf("$DEPS_DIR/%s/%s", depsIdx, relPath)
 		} else if strings.HasPrefix(lib, buildDir) {
 			// Library is in build directory (unlikely for additional libs, but handle it)
 			relPath, err := filepath.Rel(buildDir, lib)
@@ -274,7 +275,7 @@ func (d *DistZipContainer) collectAdditionalLibraries() []string {
 	var libs []string
 	depsDir := d.context.Stager.DepDir()
 
-	// Scan $DEPS_DIR/0/ for all framework directories
+	// Scan $DEPS_DIR/<idx>/ for all framework directories
 	entries, err := os.ReadDir(depsDir)
 	if err != nil {
 		d.context.Log.Debug("Unable to read deps directory: %s", err.Error())

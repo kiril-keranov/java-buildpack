@@ -100,12 +100,15 @@ func (s *SkyWalkingAgentFramework) Finalize() error {
 
 	s.context.Log.BeginStep("Configuring SkyWalking agent")
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := s.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path
 	relPath, err := filepath.Rel(s.context.Stager.DepDir(), s.jarPath)
 	if err != nil {
 		return fmt.Errorf("failed to determine relative path for SkyWalking agent: %w", err)
 	}
-	runtimeJarPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeJarPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Get credentials from service binding
 	credentials := s.getCredentials()

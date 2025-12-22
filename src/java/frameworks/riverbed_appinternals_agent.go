@@ -16,9 +16,9 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"encoding/json"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -82,12 +82,15 @@ func (r *RiverbedAppInternalsAgentFramework) Finalize() error {
 
 	r.context.Log.BeginStep("Configuring Riverbed AppInternals agent")
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := r.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path
 	relPath, err := filepath.Rel(r.context.Stager.DepDir(), r.agentPath)
 	if err != nil {
 		return fmt.Errorf("failed to determine relative path for Riverbed AppInternals agent: %w", err)
 	}
-	runtimeJarPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeJarPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Get credentials from service binding
 	credentials := r.getCredentials()
@@ -211,4 +214,3 @@ func (r *RiverbedAppInternalsAgentFramework) getApplicationName() string {
 
 	return ""
 }
-

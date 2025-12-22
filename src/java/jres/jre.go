@@ -266,7 +266,7 @@ func WriteJavaOptsWithPriority(ctx *common.Context, priority int, name string, o
 //
 // Parameters:
 //   - ctx: JRE context with Stager and Logger
-//   - jreDir: The directory where the JRE was installed (e.g., $DEPS_DIR/0/jre)
+//   - jreDir: The directory where the JRE was installed (e.g., $DEPS_DIR/<idx>/jre)
 //   - javaHome: The actual JAVA_HOME path (may be jreDir or a subdirectory)
 //
 // The function creates a java.sh script in profile.d that:
@@ -284,13 +284,15 @@ func WriteJavaHomeProfileD(ctx *common.Context, jreDir, javaHome string) error {
 
 	// Build the JAVA_HOME path using $DEPS_DIR environment variable
 	// This allows the path to work at runtime when the app is staged
+	// Use the actual buildpack index from ctx.Stager.DepsIdx() to support multi-buildpack scenarios
+	depsIdx := ctx.Stager.DepsIdx()
 	var javaHomePath string
 	if relPath == "." {
 		// JAVA_HOME is directly at jreDir
-		javaHomePath = "$DEPS_DIR/0/jre"
+		javaHomePath = fmt.Sprintf("$DEPS_DIR/%s/jre", depsIdx)
 	} else {
 		// JAVA_HOME is in a subdirectory (e.g., jdk-17.0.13)
-		javaHomePath = fmt.Sprintf("$DEPS_DIR/0/jre/%s", relPath)
+		javaHomePath = fmt.Sprintf("$DEPS_DIR/%s/jre/%s", depsIdx, relPath)
 	}
 
 	// Create the profile.d script content with JAVA_HOME, JRE_HOME, and PATH

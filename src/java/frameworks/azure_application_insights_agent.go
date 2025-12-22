@@ -151,12 +151,15 @@ func (a *AzureApplicationInsightsAgentFramework) Finalize() error {
 
 	a.context.Log.BeginStep("Configuring Azure Application Insights agent")
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := a.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path
 	relPath, err := filepath.Rel(a.context.Stager.DepDir(), a.jarPath)
 	if err != nil {
 		return fmt.Errorf("failed to determine relative path for Azure Application Insights agent: %w", err)
 	}
-	runtimeJarPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeJarPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Build all JAVA_OPTS options
 	var opts []string

@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"path/filepath"
 
 	"github.com/cloudfoundry/libbuildpack"
@@ -132,6 +132,9 @@ func (j *JacocoAgentFramework) Finalize() error {
 		properties["output"] = output
 	}
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := j.context.Stager.DepsIdx()
+
 	// Find jacocoagent.jar at staging time to determine relative path
 	agentDir := filepath.Join(j.context.Stager.DepDir(), "jacoco_agent")
 	agentJar, err := j.findJacocoAgent(agentDir)
@@ -145,7 +148,7 @@ func (j *JacocoAgentFramework) Finalize() error {
 	if err != nil {
 		return fmt.Errorf("failed to compute relative path: %w", err)
 	}
-	runtimeAgentPath := filepath.Join("$DEPS_DIR/0", relPath)
+	runtimeAgentPath := filepath.Join(fmt.Sprintf("$DEPS_DIR/%s", depsIdx), relPath)
 
 	// Build javaagent option with runtime path
 	javaagentOpts := fmt.Sprintf("-javaagent:%s", runtimeAgentPath)

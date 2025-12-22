@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 )
@@ -62,9 +62,13 @@ func writeJavaOptsFile(ctx *common.Context, priority int, name string, javaOpts 
 // CreateJavaOptsAssemblyScript creates the centralized profile.d script that assembles all JAVA_OPTS
 // This should be called ONCE during finalization (by the finalize coordinator)
 func CreateJavaOptsAssemblyScript(ctx *common.Context) error {
-	assemblyScript := `#!/bin/bash
+	// Get the actual buildpack index to support multi-buildpack scenarios
+	depsIdx := ctx.Stager.DepsIdx()
+
+	// Build the assembly script with the correct buildpack index
+	assemblyScript := fmt.Sprintf(`#!/bin/bash
 # Centralized JAVA_OPTS Assembly
-# Reads all .opts files from $DEPS_DIR/0/java_opts/ in numerical order
+# Reads all .opts files from $DEPS_DIR/%s/java_opts/ in numerical order
 # and assembles them into a single JAVA_OPTS environment variable
 # Expands runtime variables like $DEPS_DIR, $HOME, $JAVA_OPTS, and all other environment variables
 
@@ -74,8 +78,8 @@ USER_JAVA_OPTS="$JAVA_OPTS"
 # Start building new JAVA_OPTS
 JAVA_OPTS=""
 
-if [ -d "$DEPS_DIR/0/java_opts" ]; then
-    for opts_file in "$DEPS_DIR/0/java_opts"/*.opts; do
+if [ -d "$DEPS_DIR/%s/java_opts" ]; then
+    for opts_file in "$DEPS_DIR/%s/java_opts"/*.opts; do
         if [ -f "$opts_file" ]; then
             # Read content and expand runtime variables
             opts_content=$(cat "$opts_file")
@@ -106,7 +110,7 @@ fi
 JAVA_OPTS=$(echo "$JAVA_OPTS" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
 
 export JAVA_OPTS
-`
+`, depsIdx, depsIdx, depsIdx)
 
 	if err := ctx.Stager.WriteProfileD("00_java_opts.sh", assemblyScript); err != nil {
 		return fmt.Errorf("failed to write 00_java_opts.sh: %w", err)

@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 )
@@ -110,11 +110,14 @@ func (c *ContainerCustomizerFramework) Finalize() error {
 		return nil
 	}
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := c.context.Stager.DepsIdx()
+
 	// Convert staging path to runtime path for CLASSPATH
-	// Staging: /tmp/staging/deps/0/container_customizer/container-customizer-2.0.0.jar
-	// Runtime: $DEPS_DIR/0/container_customizer/container-customizer-2.0.0.jar
+	// Staging: /tmp/staging/deps/<idx>/container_customizer/container-customizer-2.0.0.jar
+	// Runtime: $DEPS_DIR/<idx>/container_customizer/container-customizer-2.0.0.jar
 	relPath := filepath.Base(matches[0])
-	runtimePath := fmt.Sprintf("$DEPS_DIR/0/container_customizer/%s", relPath)
+	runtimePath := fmt.Sprintf("$DEPS_DIR/%s/container_customizer/%s", depsIdx, relPath)
 
 	// Write profile.d script to add Container Customizer JAR to classpath
 	// This ensures it's available to the embedded Tomcat at startup

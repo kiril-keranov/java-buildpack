@@ -1,9 +1,9 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"encoding/json"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"io"
 	"net/http"
 	"os"
@@ -146,8 +146,11 @@ func (s *SeekerSecurityProviderFramework) Finalize() error {
 		return fmt.Errorf("seeker_server_url not found in service credentials")
 	}
 
+	// Get buildpack index for multi-buildpack support
+	depsIdx := s.context.Stager.DepsIdx()
+
 	// Build runtime agent path
-	agentJar := "$DEPS_DIR/0/seeker_security_provider/seeker-agent.jar"
+	agentJar := fmt.Sprintf("$DEPS_DIR/%s/seeker_security_provider/seeker-agent.jar", depsIdx)
 
 	// Build javaagent option
 	javaOpts := fmt.Sprintf("-javaagent:%s", agentJar)
