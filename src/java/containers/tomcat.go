@@ -280,11 +280,11 @@ func (t *TomcatContainer) installExternalConfiguration(tomcatDir string) error {
 	externalConfigEnabled, repositoryRoot, version := t.isExternalConfigurationEnabled()
 
 	if !externalConfigEnabled {
-		t.context.Log.Debug("External Tomcat configuration is disabled")
+		t.context.Log.Debug("External Tomcat configuration is disabled, using defaults only")
 		return nil
 	}
 
-	t.context.Log.Info("External Tomcat configuration is enabled")
+	t.context.Log.Info("External Tomcat configuration is enabled, will overlay on top of defaults")
 
 	if repositoryRoot == "" {
 		t.context.Log.Warning("External configuration enabled but repository_root not set")
@@ -318,7 +318,7 @@ func (t *TomcatContainer) installExternalConfiguration(tomcatDir string) error {
 		return fmt.Errorf("failed to install external configuration: %w", err)
 	}
 
-	t.context.Log.Info("Installed external Tomcat configuration version %s", dep.Version)
+	t.context.Log.Info("Installed external Tomcat configuration version %s (overlaid on defaults)", dep.Version)
 	return nil
 }
 
@@ -391,21 +391,14 @@ func (t *TomcatContainer) downloadExternalConfiguration(repositoryRoot, version,
 		return fmt.Errorf("failed to extract external configuration: %w", err)
 	}
 
-	t.context.Log.Info("Successfully installed external Tomcat configuration version %s", version)
+	t.context.Log.Info("Successfully installed external Tomcat configuration version %s (overlaid on defaults)", version)
 	return nil
 }
 
 // installDefaultConfiguration installs embedded Cloud Foundry-optimized Tomcat configuration
 // These defaults provide proper CF integration (dynamic ports, stdout logging, X-Forwarded-* headers, etc.)
-// External configuration (if enabled) will override these defaults
+// External configuration (if enabled) will be layered on top of these defaults
 func (t *TomcatContainer) installDefaultConfiguration(tomcatDir string) error {
-	// Check if external configuration will be used (if so, skip defaults)
-	externalConfigEnabled, _, _ := t.isExternalConfigurationEnabled()
-	if externalConfigEnabled {
-		t.context.Log.Debug("External Tomcat configuration enabled, skipping embedded defaults")
-		return nil
-	}
-
 	t.context.Log.Info("Installing Cloud Foundry-optimized Tomcat configuration defaults")
 
 	confDir := filepath.Join(tomcatDir, "conf")
