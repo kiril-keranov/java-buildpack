@@ -10,6 +10,19 @@ import (
 	"github.com/cloudfoundry/libbuildpack"
 )
 
+// Default JRE provider
+// Change this value to set which JRE is used by default when no JRE is explicitly configured
+// Valid values: "openjdk", "zulu", "sapmachine", "graalvm", "oracle", "ibm", "zing"
+const DefaultJREProvider = "openjdk"
+
+// Memory calculator constants
+const (
+	DefaultStackThreads = 250
+	DefaultHeadroom     = 0
+	DefaultClassCount   = 18000 // Default class count when counting fails (after 35% factor: ~6300)
+	Java9ClassCount     = 42215 // Classes in Java 9+ JRE
+)
+
 // JRE represents a Java Runtime Environment provider
 type JRE interface {
 	// Name returns the name of this JRE provider (e.g., "OpenJDK", "Zulu")
@@ -72,20 +85,31 @@ func (r *Registry) SetDefault(jre JRE) {
 
 // RegisterStandardJREs registers all standard JRE providers in the correct priority order.
 // This ensures Supply and Finalize phases use the same detection order.
-// OpenJDK is set as the default JRE.
+// The default JRE is determined by the DefaultJREProvider constant.
 func (r *Registry) RegisterStandardJREs() {
-	// Register OpenJDK and set it as the default JRE
-	openJDK := NewOpenJDKJRE(r.ctx)
-	r.Register(openJDK)
-	r.SetDefault(openJDK)
+	// Create all JRE providers
+	jreProviders := map[string]JRE{
+		"openjdk":    NewOpenJDKJRE(r.ctx),
+		"zulu":       NewZuluJRE(r.ctx),
+		"sapmachine": NewSapMachineJRE(r.ctx),
+		"graalvm":    NewGraalVMJRE(r.ctx),
+		"oracle":     NewOracleJRE(r.ctx),
+		"ibm":        NewIBMJRE(r.ctx),
+		"zing":       NewZingJRE(r.ctx),
+	}
 
-	// Register additional JRE providers
-	r.Register(NewZuluJRE(r.ctx))
-	r.Register(NewSapMachineJRE(r.ctx))
-	r.Register(NewGraalVMJRE(r.ctx))
-	r.Register(NewOracleJRE(r.ctx))
-	r.Register(NewIBMJRE(r.ctx))
-	r.Register(NewZingJRE(r.ctx))
+	// Set the default JRE based on the constant
+	defaultJRE, exists := jreProviders[DefaultJREProvider]
+	if !exists {
+		r.ctx.Log.Warning("Invalid DefaultJREProvider '%s', falling back to openjdk", DefaultJREProvider)
+		defaultJRE = jreProviders["openjdk"]
+	}
+	r.SetDefault(defaultJRE)
+
+	// Register all JREs
+	for _, jre := range jreProviders {
+		r.Register(jre)
+	}
 }
 
 // Detect finds the JRE provider that should be used
@@ -149,14 +173,6 @@ type BaseComponent struct {
 	JREVersion  string
 	ComponentID string
 }
-
-// Memory calculator constants
-const (
-	DefaultStackThreads = 250
-	DefaultHeadroom     = 0
-	DefaultClassCount   = 18000 // Default class count when counting fails (after 35% factor: ~6300)
-	Java9ClassCount     = 42215 // Classes in Java 9+ JRE
-)
 
 // Helper functions
 
