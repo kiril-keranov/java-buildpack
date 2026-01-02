@@ -57,10 +57,34 @@ $ cf set-env my-application JBP_CONFIG_TOMCAT '{tomcat: { context_path: /first-s
 ```
 
 
-### Additional Resources
-The container can be configured by using external Tomcat configuration as described below.
+### Default Configuration
+The buildpack includes default Tomcat configuration files that are embedded at compile time. These defaults provide Cloud Foundry-optimized settings including:
 
-**Note:** The `resources/tomcat` directory approach from the Ruby buildpack (2013-2025) is no longer supported. This was a **buildpack-level** feature where teams would fork the java-buildpack repository, add custom files to `resources/tomcat/`, and package their custom buildpack. The Go buildpack does not package the `resources/` directory. Use external configuration instead (see below).
+- HTTP/2 support
+- Access logging valve configuration
+- Remote IP valve for proper `x-forwarded-proto` handling
+- Application startup failure detection
+- Error report valve with disabled server info disclosure
+
+The default configuration files are located in `src/java/resources/files/tomcat/conf/`:
+- `server.xml` - Main Tomcat server configuration
+- `context.xml` - Default context configuration
+- `logging.properties` - Logging configuration
+
+These defaults are automatically applied and can be overridden using external configuration (see below).
+
+#### Customizing Default Configuration via Fork
+To customize the default Tomcat configuration across all applications using your buildpack:
+
+1. Fork the java-buildpack repository
+2. Modify the configuration files in `src/java/resources/files/tomcat/conf/`
+3. Build and package your custom buildpack
+4. Upload the custom buildpack to your Cloud Foundry foundation
+
+This approach is useful for operators who want to enforce organization-wide Tomcat settings.
+
+### Additional Resources
+The container can also be configured using external Tomcat configuration as described below.
 
 #### External Tomcat Configuration
 Supply a repository with an external Tomcat configuration that will be downloaded during staging.

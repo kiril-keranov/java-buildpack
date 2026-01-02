@@ -316,10 +316,42 @@ java-buildpack/
 │   ├── containers/     # Container implementations
 │   ├── frameworks/     # Framework implementations
 │   ├── jres/           # JRE implementations
+│   ├── resources/      # Embedded default configuration files
+│   │   ├── embed.go    # Go embed directive for resources
+│   │   └── files/      # Default configuration files
+│   │       ├── tomcat/conf/           # Tomcat defaults (server.xml, context.xml, logging.properties)
+│   │       ├── app_dynamics_agent/    # AppDynamics defaults
+│   │       ├── azure_application_insights_agent/  # Azure AI defaults
+│   │       ├── luna_security_provider/            # Luna defaults
+│   │       ├── new_relic_agent/                   # New Relic defaults
+│   │       └── protect_app_security_provider/     # ProtectApp defaults
 │   ├── supply/         # Supply phase logic
 │   └── finalize/       # Finalize phase logic
 └── manifest.yml        # Dependency manifest
 ```
+
+## Embedded Resources
+
+The buildpack includes default configuration files for various components that are embedded at compile time using Go's `embed` package. These files are located in `src/java/resources/files/` and provide sensible defaults for Cloud Foundry deployments.
+
+### How Embedding Works
+
+The `src/java/resources/embed.go` file uses the `//go:embed` directive to include all files from the `files/` directory into the compiled binary. This approach:
+
+- Eliminates the need for external file dependencies at runtime
+- Ensures configuration files are always available
+- Allows operators to customize defaults by forking and modifying the source files
+
+### Customizing Embedded Resources
+
+To customize the default configuration files:
+
+1. Fork the java-buildpack repository
+2. Modify the configuration files in `src/java/resources/files/`
+3. Build and package your custom buildpack using `./scripts/package.sh`
+4. Upload the custom buildpack to your Cloud Foundry foundation
+
+The embedded defaults are applied first, and user-provided configurations (via environment variables, external configuration URLs, or application-bundled files) are layered on top.
 
 ## Technology Stack
 

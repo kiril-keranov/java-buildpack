@@ -48,5 +48,20 @@ The credential payload of the service has to contain one of the following entrie
 ## Configuration
 For general information on configuring the buildpack, including how to specify configuration values through environment variables, refer to [Configuration and Extension][].
 
+### Default Configuration
+The buildpack includes a default `AI-Agent.xml` configuration file that is embedded at compile time. This provides sensible defaults for Cloud Foundry deployments.
+
+The default configuration file is located in `src/java/resources/files/azure_application_insights_agent/AI-Agent.xml`.
+
+#### Customizing Default Configuration via Fork
+To customize the default Azure Application Insights configuration across all applications using your buildpack:
+
+1. Fork the java-buildpack repository
+2. Modify the configuration file in `src/java/resources/files/azure_application_insights_agent/`
+3. Build and package your custom buildpack
+4. Upload the custom buildpack to your Cloud Foundry foundation
+
+This approach is useful for operators who want to enforce organization-wide Azure Application Insights settings.
+
 [Configuration and Extension]: ../README.md#configuration-and-extension
 [Azure Application Insights Service]: https://learn.microsoft.com/en-us/azure/azure-monitor/app/java-in-process-agent

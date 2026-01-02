@@ -61,7 +61,20 @@ extensions
 
 ### Additional Configuration
 
-**Note:** The `resources/new_relic_agent` directory approach from the Ruby buildpack (2013-2025) is no longer supported. The Go buildpack does not package the `resources/` directory.
+#### Default Configuration
+The buildpack includes a default `newrelic.yml` configuration file that is embedded at compile time. This provides sensible defaults for Cloud Foundry deployments.
+
+The default configuration file is located in `src/java/resources/files/new_relic_agent/newrelic.yml`.
+
+##### Customizing Default Configuration via Fork
+To customize the default New Relic configuration across all applications using your buildpack:
+
+1. Fork the java-buildpack repository
+2. Modify the configuration file in `src/java/resources/files/new_relic_agent/`
+3. Build and package your custom buildpack
+4. Upload the custom buildpack to your Cloud Foundry foundation
+
+This approach is useful for operators who want to enforce organization-wide New Relic settings.
 
 [Configuration and Extension]: ../README.md#configuration-and-extension
 [`config/new_relic_agent.yml`]: ../config/new_relic_agent.yml

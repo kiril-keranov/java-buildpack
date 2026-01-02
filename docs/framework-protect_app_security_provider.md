@@ -88,9 +88,22 @@ The framework can be configured by modifying the [`config/protect_app_security_p
 
 ### Additional Configuration
 
-**Note:** The `resources/protect_app_security_provider` directory approach from the Ruby buildpack (2013-2025) is no longer supported. The Go buildpack does not package the `resources/` directory.
+#### Default Configuration
+The buildpack includes a default `IngrianNAE.properties` configuration file that is embedded at compile time. This provides sensible defaults for Cloud Foundry deployments.
 
-All ProtectApp configuration should be provided via:
+The default configuration file is located in `src/java/resources/files/protect_app_security_provider/IngrianNAE.properties`.
+
+##### Customizing Default Configuration via Fork
+To customize the default ProtectApp Security Provider configuration across all applications using your buildpack:
+
+1. Fork the java-buildpack repository
+2. Modify the configuration file in `src/java/resources/files/protect_app_security_provider/`
+3. Build and package your custom buildpack
+4. Upload the custom buildpack to your Cloud Foundry foundation
+
+This approach is useful for operators who want to enforce organization-wide ProtectApp Security Provider settings.
+
+All ProtectApp configuration can also be provided via:
 - System properties passed through VCAP_SERVICES credentials (using the `-Dcom.ingrian.security.nae.*` prefix)
 - The credentials payload as documented above
 

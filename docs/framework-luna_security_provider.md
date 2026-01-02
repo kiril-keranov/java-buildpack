@@ -101,7 +101,20 @@ The framework can be configured by modifying the [`config/luna_security_provider
 
 The Luna Security Provider is automatically configured when a service is bound with both `servers` and `groups` keys in the VCAP_SERVICES credentials. The buildpack generates a complete `Chrystoki.conf` configuration file from the service binding information.
 
-**Note:** The `resources/luna_security_provider` directory approach from the Ruby buildpack (2013-2025) is no longer supported. The Go buildpack does not package the `resources/` directory.
+#### Default Configuration
+The buildpack includes a default `Chrystoki.conf` template that is embedded at compile time. This provides sensible defaults for Cloud Foundry deployments.
+
+The default configuration file is located in `src/java/resources/files/luna_security_provider/Chrystoki.conf`.
+
+##### Customizing Default Configuration via Fork
+To customize the default Luna Security Provider configuration across all applications using your buildpack:
+
+1. Fork the java-buildpack repository
+2. Modify the configuration file in `src/java/resources/files/luna_security_provider/`
+3. Build and package your custom buildpack
+4. Upload the custom buildpack to your Cloud Foundry foundation
+
+This approach is useful for operators who want to enforce organization-wide Luna Security Provider settings.
 
 [`config/luna_security_provider.yml`]: ../config/luna_security_provider.yml
 [Luna Security Service]: http://www.safenet-inc.com/data-encryption/hardware-security-modules-hsms/

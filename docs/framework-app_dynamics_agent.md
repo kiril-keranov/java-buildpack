@@ -46,13 +46,26 @@ The framework can be configured by modifying the [`config/app_dynamics_agent.yml
 ### Additional Resources
 The framework can be configured by providing custom configuration files.
 
+#### Default Configuration
+The buildpack includes a default `app-agent-config.xml` configuration file that is embedded at compile time. This default configuration provides sensible defaults for Cloud Foundry deployments, including sensitive data filtering for passwords and keys.
+
+The default configuration file is located in `src/java/resources/files/app_dynamics_agent/defaults/conf/app-agent-config.xml`.
+
+##### Customizing Default Configuration via Fork
+To customize the default AppDynamics configuration across all applications using your buildpack:
+
+1. Fork the java-buildpack repository
+2. Modify the configuration file in `src/java/resources/files/app_dynamics_agent/defaults/conf/`
+3. Build and package your custom buildpack
+4. Upload the custom buildpack to your Cloud Foundry foundation
+
+This approach is useful for operators who want to enforce organization-wide AppDynamics settings.
+
 Configuration files are applied in this order:
 
-1. Default AppDynamics configuration
+1. Default AppDynamics configuration (embedded in buildpack)
 2. External Configuration (if configured via `APPD_CONF_HTTP_URL`)
 3. Local Configuration (if configured via `APPD_CONF_DIR`)
-
-**Note:** The `resources/app_dynamics_agent` directory approach from the Ruby buildpack (2013-2025) is no longer supported. This was a **buildpack-level** feature where teams would fork the java-buildpack repository, add custom files to `resources/app_dynamics_agent/`, and package their custom buildpack. The Go buildpack does not package the `resources/` directory. Use External Configuration or Local Configuration instead (see below).
 
 #### External Configuration
 Set `APPD_CONF_HTTP_URL` to an HTTP or HTTPS URL which points to the directory where your configuration files exist. You may also include a user and password in the URL, like `https://user:pass@example.com`.
