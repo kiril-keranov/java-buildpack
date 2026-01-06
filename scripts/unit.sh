@@ -1,16 +1,27 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
-# Add GOPATH bin to PATH
-export PATH="${PATH}:${HOME}/go/bin"
+set -e
+set -u
+set -o pipefail
 
-cd "$( dirname "${BASH_SOURCE[0]}" )/.."
-source ./scripts/install_tools.sh
+ROOTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly ROOTDIR
 
-echo "-----> Running unit tests"
+# shellcheck source=SCRIPTDIR/.util/tools.sh
+source "${ROOTDIR}/scripts/.util/tools.sh"
 
-# Run ginkgo tests with v2 syntax
-cd src/java
-ginkgo -r --skip-package=integration,brats
+function main() {
+  local src
+  src="$(find "${ROOTDIR}/src" -mindepth 1 -maxdepth 1 -type d )"
 
-echo "-----> Unit tests complete"
+  util::tools::ginkgo::install --directory "${ROOTDIR}/.bin"
+  util::tools::buildpack-packager::install --directory "${ROOTDIR}/.bin"
+
+  ginkgo \
+    -r \
+    -mod vendor \
+    --skip-package brats,integration \
+      ${src}
+}
+
+main "${@:-}"
