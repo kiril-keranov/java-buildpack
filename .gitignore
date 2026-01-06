@@ -4,7 +4,6 @@
 .DS_Store
 build/
 doc
-.envrc
 AGENTS.md
 SESSION_*.md
 MIGRATION_STATUS.md
