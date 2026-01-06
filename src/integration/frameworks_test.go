@@ -30,7 +30,8 @@ func testFrameworks(platform switchblade.Platform, fixtures string) func(*testin
 				t.Logf("❌ FAILED TEST - App/Container: %s", name)
 				t.Logf("   Platform: %s", settings.Platform)
 			}
-			if name != "" && (!settings.KeepFailedContainers || !t.Failed()) {
+			// Only attempt cleanup if test actually ran (not skipped) and name was set
+			if name != "" && !t.Skipped() && (!settings.KeepFailedContainers || !t.Failed()) {
 				Expect(platform.Delete.Execute(name)).To(Succeed())
 			}
 		})
