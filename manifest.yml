@@ -203,37 +203,37 @@ dependency_deprecation_dates:
 dependencies:
 # OpenJDK JRE versions
 - name: openjdk
-  version: 8.0.422
-  uri: https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u422-b05/OpenJDK8U-jre_x64_linux_hotspot_8u422b05.tar.gz
-  sha256: 0ac516cc1eadffb4cd3cfc9736a33d58ea6a396bf85729036c973482f7c063d9
+  version: 8.0.472
+  uri: https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u472-b08/OpenJDK8U-jre_x64_linux_hotspot_8u472b08.tar.gz
+  sha256: 6f7fb5fd640a0fd00837344b0920cbc4b9b9284b50e66f33789e3b250446a16e
   cf_stacks:
   - cflinuxfs4
 
 - name: openjdk
-  version: 11.0.25
-  uri: https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jre_x64_linux_hotspot_11.0.25_9.tar.gz
-  sha256: 84cd7101f39172a4db085fb52940595bb14dad6bc3afb5bf82ee497eceaf86d3
+  version: 11.0.29
+  uri: https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.29%2B7/OpenJDK11U-jre_x64_linux_hotspot_11.0.29_7.tar.gz
+  sha256: 97a4c089411868e24bf74a9789a819ae4164818316f8a3146460a102e8db6149
   cf_stacks:
   - cflinuxfs4
 
 - name: openjdk
-  version: 17.0.13
-  uri: https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%2B11/OpenJDK17U-jre_x64_linux_hotspot_17.0.13_11.tar.gz
-  sha256: 4086cc7cb2d9e7810141f255063caad10a8a018db5e6b47fa5394c506ab65bff
+  version: 17.0.17
+  uri: https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.17%2B10/OpenJDK17U-jre_x64_linux_hotspot_17.0.17_10.tar.gz
+  sha256: 1c607fb19f153b23a7d62ff980eb55cff1a7d47ce565bbc44d14947c93bd33c9
   cf_stacks:
   - cflinuxfs4
 
 - name: openjdk
-  version: 21.0.5
-  uri: https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jre_x64_linux_hotspot_21.0.5_11.tar.gz
-  sha256: 553dda64b3b1c3c16f8afe402377ffebe64fb4a1721a46ed426a91fd18185e62
+  version: 21.0.9
+  uri: https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.9%2B10/OpenJDK21U-jre_x64_linux_hotspot_21.0.9_10.tar.gz
+  sha256: aeab55d064a1a27a3744b0880b9b414077b4ed2b1790817eea3df60aec946431
   cf_stacks:
   - cflinuxfs4
 
 - name: openjdk
-  version: 23.0.1
-  uri: https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.1%2B11/OpenJDK23U-jre_x64_linux_hotspot_23.0.1_11.tar.gz
-  sha256: 1233cbec40f05c76ad926b68521ae78c6ae4f454996ef549602be6987069fa77
+  version: 23.0.2
+  uri: https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.2%2B7/OpenJDK23U-jre_x64_linux_hotspot_23.0.2_7.tar.gz
+  sha256: 1a16c654e67a72dadfa632969a457404ad1cc30c6375857fdcb393e0592ce3ba
   cf_stacks:
   - cflinuxfs4
 
@@ -278,24 +278,24 @@ dependencies:
 
 # Tomcat versions
 - name: tomcat
-  version: 9.0.98
-  uri: https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.98/bin/apache-tomcat-9.0.98.tar.gz
-  sha256: 1d9a1104c2e235a5baff6e9ca8e28be3d864803fafc478f5c13c2ae6a5ed3d6f
+  version: 9.0.113
+  uri: https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.113/bin/apache-tomcat-9.0.113.tar.gz
+  sha256: 790db2b8092b7954dec2afc6af71a7bbb6c67998198516dd6a9f865661b5d2a7
   cf_stacks:
   - cflinuxfs4
 
 - name: tomcat
-  version: 10.1.33
-  uri: https://archive.apache.org/dist/tomcat/tomcat-10/v10.1.33/bin/apache-tomcat-10.1.33.tar.gz
-  sha256: 3b2b21d61cd587b5f838da1843763feaa5e864fe05975a101dade0922de50895
+  version: 10.1.50
+  uri: https://archive.apache.org/dist/tomcat/tomcat-10/v10.1.50/bin/apache-tomcat-10.1.50.tar.gz
+  sha256: f74f9f1a7ac2cf6eeede2c50f45088d9c3e55f77d5777f9f7033ed3d43ef529c
   cf_stacks:
   - cflinuxfs4
 
 # Groovy versions
 - name: groovy
-  version: 4.0.23
-  uri: https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-4.0.23.zip
-  sha256: 7089dd7a1e84adc814d616f5ec2f7d7dac2044a0a0457f3341b3b92d30204229
+  version: 4.0.29
+  uri: https://groovy.jfrog.io/artifactory/dist-release-local/groovy-zips/apache-groovy-binary-4.0.29.zip
+  sha256: 4a42d976370c6ab373a35ec602440a8a780a7715d55e4117b3028864a247878a
   cf_stacks:
   - cflinuxfs4
 
@@ -309,9 +309,9 @@ dependencies:
 
 # JVM Kill Agent
 - name: jvmkill
-  version: 1.16.0
-  uri: https://github.com/cloudfoundry/jvmkill/releases/download/v1.16.0.RELEASE/jvmkill-1.16.0-RELEASE.so
-  sha256: a3092627b082cb3cdbbe4b255d35687126aa604e6b613dcda33be9f7e1277162
+  version: 1.17.0
+  uri: https://github.com/cloudfoundry/jvmkill/releases/download/v1.17.0-RELEASE/jvmkill-1.17.0-RELEASE.so
+  sha256: fb3fbbf6a242f0bcc4721c1c7b3c2f29ec08c4247c81f118e0870aeea8387dbc
   cf_stacks:
   - cflinuxfs4
 
@@ -391,9 +391,9 @@ dependencies:
 
 # SkyWalking Agent
 - name: skywalking-agent
-  version: 9.4.0
-  uri: https://archive.apache.org/dist/skywalking/java-agent/9.4.0/apache-skywalking-java-agent-9.4.0.tgz
-  sha256: 251729e400abe7eb75d83de543e355e6f5e62ecb361be67431aaece9107c15cc
+  version: 9.5.0
+  uri: https://archive.apache.org/dist/skywalking/java-agent/9.5.0/apache-skywalking-java-agent-9.5.0.tgz
+  sha256: 5ce3d3a97e4403ac3c0c386c211521d0e39237ae1ce662427d1fe8a9bbc20735
   cf_stacks:
   - cflinuxfs4
 
@@ -447,25 +447,25 @@ dependencies:
 
 # PostgreSQL JDBC Driver
 - name: postgresql-jdbc
-  version: 42.7.4
-  uri: https://repo1.maven.org/maven2/org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar
-  sha256: 188976721ead8e8627eb6d8389d500dccc0c9bebd885268a3047180274a6031e
+  version: 42.7.8
+  uri: https://repo1.maven.org/maven2/org/postgresql/postgresql/42.7.8/postgresql-42.7.8.jar
+  sha256: 2a32a9dcbc42d67a50ad3a0de5efd102c8d2be46720045f2cbd6689f160ab7c7
   cf_stacks:
   - cflinuxfs4
 
 # MariaDB JDBC Driver
 - name: mariadb-jdbc
-  version: 3.5.1
-  uri: https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/3.5.1/mariadb-java-client-3.5.1.jar
-  sha256: 50a50c4a3c13c30dfbd40587f7ad9a496197d285ede0948641d9eee68fdf2106
+  version: 3.5.7
+  uri: https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/3.5.7/mariadb-java-client-3.5.7.jar
+  sha256: 07bb1229dc184f3313a5aef4c5a6b3207c8dbaa09db4a26814c936f004b4c526
   cf_stacks:
   - cflinuxfs4
 
 # JaCoCo Code Coverage Agent
 - name: jacoco
-  version: 0.8.12
-  uri: https://repo1.maven.org/maven2/org/jacoco/jacoco/0.8.12/jacoco-0.8.12.zip
-  sha256: 35cf2a2b8937659ecbc8d0d3902dfa7f55b7ed2250e82424036a3e1d12462cd7
+  version: 0.8.14
+  uri: https://repo1.maven.org/maven2/org/jacoco/jacoco/0.8.14/jacoco-0.8.14.zip
+  sha256: 0372447f54900b4e77bcb216985b7d31cf5318fc599f8f9346ee35830448c125
   cf_stacks:
   - cflinuxfs4
 
