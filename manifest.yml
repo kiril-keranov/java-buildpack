@@ -177,7 +177,7 @@ dependency_deprecation_dates:
 - version_line: 8.x
   name: openjdk
   date: 2026-11-30
-  link: https://adoptium.net/support/
+  link: https://bell-sw.com/pages/downloads/#jdk-8-lts
   match: 8\.\d+\.\d+
 - version_line: 11.x
   name: openjdk
@@ -196,13 +196,15 @@ dependency_deprecation_dates:
   match: 21\.\d+\.\d+
 
 dependencies:
-# OpenJDK JRE versions
+# OpenJDK JRE versions (BellSoft Liberica from CF Mirror)
 - name: openjdk
-  version: 8.0.472
-  uri: https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u472-b08/OpenJDK8U-jre_x64_linux_hotspot_8u472b08.tar.gz
-  sha256: 6f7fb5fd640a0fd00837344b0920cbc4b9b9284b50e66f33789e3b250446a16e
+  version: 8.0.452
+  uri: https://java-buildpack.cloudfoundry.org/openjdk/jammy/x86_64/bellsoft-jre8u452%2B11-linux-amd64.tar.gz
+  sha256: 0a041f8d935fbe2f002116f702656235f91f9b2611785833926444da8d922e44
   cf_stacks:
   - cflinuxfs4
+  source: https://bell-sw.com/pages/downloads/#jdk-8-lts
+  source_sha256: 0a041f8d935fbe2f002116f702656235f91f9b2611785833926444da8d922e44
 
 - name: openjdk
   version: 11.0.27
