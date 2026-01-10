@@ -16,8 +16,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"path/filepath"
 	"strings"
 )
@@ -68,7 +68,7 @@ func (f *MariaDBJDBCFramework) Supply() error {
 	}
 
 	// Find the installed JAR
-	jarPattern := filepath.Join(mariadbDir, "mariadb-java-client-*.jar")
+	jarPattern := filepath.Join(mariadbDir, "mariadb-jdbc-*.jar")
 	matches, err := filepath.Glob(jarPattern)
 	if err != nil {
 		return fmt.Errorf("failed to search for MariaDB JDBC JAR: %w", err)

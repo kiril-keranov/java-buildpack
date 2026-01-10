@@ -242,7 +242,12 @@ func (t *TomcatContainer) installTomcatLoggingSupport() (string, error) {
 		return "", fmt.Errorf("failed to install Tomcat logging support: %w", err)
 	}
 
-	jarName := fmt.Sprintf("%s-%s.RELEASE.jar", dep.Name, dep.Version)
+	entry, err := t.context.Manifest.GetEntry(dep)
+	if err != nil {
+		return "", fmt.Errorf("failed to get manifest entry for tomcat-logging-support: %w", err)
+	}
+
+	jarName := filepath.Base(entry.URI)
 	t.context.Log.Info("Successfully installed Tomcat Logging Support %s to tomcat/bin (contains CloudFoundryConsoleHandler)", dep.Version)
 	return jarName, nil
 }
@@ -253,24 +258,17 @@ func (t *TomcatContainer) createSetenvScript(tomcatDir, loggingSupportJar string
 	binDir := filepath.Join(tomcatDir, "bin")
 	setenvPath := filepath.Join(binDir, "setenv.sh")
 
-	// Build the runtime path to the logging JAR
-	// At runtime, CATALINA_HOME points to $DEPS_DIR/<idx>/tomcat
 	jarPath := "$CATALINA_HOME/bin/" + loggingSupportJar
 
-	// Create setenv.sh content that adds logging JAR to CLASSPATH
 	setenvContent := fmt.Sprintf(`#!/bin/sh
-# This file is sourced by catalina.sh before starting Tomcat
-# Add Tomcat logging support JAR to CLASSPATH for CloudFoundryConsoleHandler
-
-CLASSPATH=$CLASSPATH:%s
+JAVA_OPTS="$JAVA_OPTS -Xbootclasspath/a:%s"
 `, jarPath)
 
-	// Write the setenv.sh file
 	if err := os.WriteFile(setenvPath, []byte(setenvContent), 0755); err != nil {
 		return fmt.Errorf("failed to write setenv.sh: %w", err)
 	}
 
-	t.context.Log.Info("Created setenv.sh to add logging support JAR to CLASSPATH")
+	t.context.Log.Info("Created setenv.sh with logging JAR on boot classpath")
 	return nil
 }
 
