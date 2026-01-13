@@ -71,7 +71,7 @@ default_versions:
 - name: your-kit-profiler
   version: 2025.x
 - name: jprofiler-profiler
-  version: 14.x
+  version: 15.x
 - name: sealights-agent
   version: 4.x
 - name: container-security-provider
@@ -523,9 +523,9 @@ dependencies:
 
 # JProfiler Profiler
 - name: jprofiler-profiler
-  version: 14.0.5
-  uri: https://download.run.pivotal.io/jprofiler/jprofiler-14.0.5.tar.gz
-  sha256: 4bb7b65aeac327478fce9320d182bde0c9f47877dbf3f8cd99fd2462db366343
+  version: 15.0.4
+  uri: https://download.run.pivotal.io/jprofiler/jprofiler-15.0.4.tar.gz
+  sha256: 57c81d964a8fefd868f7c3559fbf64301165cdef55ce6c5cbfa23f1fa8790ddb
   cf_stacks:
   - cflinuxfs4
 
