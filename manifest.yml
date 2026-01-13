@@ -605,4 +605,4 @@ dependencies:
 # ========================================
 # NOTE: Checkmarx agent is downloaded via API using authentication from service binding
 # The framework will download directly from the Checkmarx API at runtime
-# No manifest entry needed - download is fully dynamic 
+# No manifest entry needed - download is fully dynamic
