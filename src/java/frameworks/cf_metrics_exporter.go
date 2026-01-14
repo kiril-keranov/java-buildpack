@@ -77,7 +77,8 @@ func (f *CfMetricsExporterFramework) Finalize() error {
 		return err
 	}
 	jarName := fmt.Sprintf("cf-metrics-exporter-%s.jar", dep.Version)
-	agentPath := filepath.Join(f.ctx.Stager.DepDir(), cfMetricsExporterDirName, jarName)
+	depsIdx := f.ctx.Stager.DepsIdx()
+	agentPath := fmt.Sprintf("$DEPS_DIR/%s/cf_metrics_exporter/%s", depsIdx, jarName)
 	props := os.Getenv("CF_METRICS_EXPORTER_PROPS")
 	var javaOpt string
 	if props != "" {
