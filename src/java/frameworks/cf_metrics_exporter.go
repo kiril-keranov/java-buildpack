@@ -9,7 +9,8 @@ import (
 	"github.com/cloudfoundry/libbuildpack"
 )
 
-const cfMetricsExporterDependencyName = "cf_metrics_exporter"
+const cfMetricsExporterDependencyName = "cf-metrics-exporter"
+const cfMetricsExporterDirName = "cf_metrics_exporter"
 
 type CfMetricsExporterFramework struct {
 	ctx *common.Context
@@ -24,7 +25,7 @@ func (f *CfMetricsExporterFramework) Detect() (string, error) {
 	if enabled == "true" || enabled == "TRUE" {
 		version, err := f.ctx.Manifest.DefaultVersion(cfMetricsExporterDependencyName)
 		if err != nil {
-			return "cf-metrics-exporter", nil // fallback if version not found
+			return "", fmt.Errorf("cf-metrics-exporter version not found in manifest: %w", err)
 		}
 		return fmt.Sprintf("cf-metrics-exporter=%s", version), nil
 	}
@@ -34,11 +35,11 @@ func (f *CfMetricsExporterFramework) Detect() (string, error) {
 func (f *CfMetricsExporterFramework) getManifestDependency() (libbuildpack.Dependency, *libbuildpack.ManifestEntry, error) {
 	dep, err := f.ctx.Manifest.DefaultVersion(cfMetricsExporterDependencyName)
 	if err != nil {
-		return libbuildpack.Dependency{}, nil, fmt.Errorf("cf_metrics_exporter version not found in manifest: %w", err)
+		return libbuildpack.Dependency{}, nil, fmt.Errorf("cf-metrics-exporter version not found in manifest: %w", err)
 	}
 	entry, err := f.ctx.Manifest.GetEntry(dep)
 	if err != nil {
-		return dep, nil, fmt.Errorf("cf_metrics_exporter manifest entry not found: %w", err)
+		return dep, nil, fmt.Errorf("cf-metrics-exporter manifest entry not found: %w", err)
 	}
 	return dep, entry, nil
 }
@@ -52,7 +53,7 @@ func (f *CfMetricsExporterFramework) Supply() error {
 	if err != nil {
 		return err
 	}
-	agentDir := filepath.Join(f.ctx.Stager.DepDir(), ".java-buildpack", "cf_metrics_exporter")
+	agentDir := filepath.Join(f.ctx.Stager.DepDir(), ".java-buildpack", cfMetricsExporterDirName)
 	if err := os.MkdirAll(agentDir, 0755); err != nil {
 		return fmt.Errorf("failed to create agent dir: %w", err)
 	}
@@ -76,7 +77,7 @@ func (f *CfMetricsExporterFramework) Finalize() error {
 		return err
 	}
 	jarName := fmt.Sprintf("cf-metrics-exporter-%s.jar", dep.Version)
-	agentPath := filepath.Join(".java-buildpack", "cf_metrics_exporter", jarName)
+	agentPath := filepath.Join(".java-buildpack", cfMetricsExporterDirName, jarName)
 	props := os.Getenv("CF_METRICS_EXPORTER_PROPS")
 	var javaOpt string
 	if props != "" {
@@ -85,5 +86,5 @@ func (f *CfMetricsExporterFramework) Finalize() error {
 		javaOpt = fmt.Sprintf("-javaagent:%s", agentPath)
 	}
 	// Priority 43: after SkyWalking (41), Splunk OTEL (42)
-	return writeJavaOptsFile(f.ctx, 43, "cf_metrics_exporter", javaOpt)
+	return writeJavaOptsFile(f.ctx, 43, cfMetricsExporterDirName, javaOpt)
 }
