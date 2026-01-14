@@ -21,7 +21,7 @@ default_versions:
 - name: zulu
   version: 11.x
 - name: sapmachine
-  version: 17.x
+  version: 21.x
 - name: tomcat
   version: 10.1.x
 - name: tomcat-access-logging-support
@@ -259,16 +259,23 @@ dependencies:
 # SAP Machine JRE versions
 # Repository: https://github.com/SAP/SapMachine/releases
 - name: sapmachine
-  version: 11.0.25
-  uri: https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.25/sapmachine-jre-11.0.25_linux-x64_bin.tar.gz
-  sha256: 10f3eb5b93c2c26f7c69a3690d5877b401b5ab24a6b1798fac5518beb1f1f839
+  version: 17.0.17
+  uri: https://github.com/SAP/SapMachine/releases/download/sapmachine-17.0.17/sapmachine-jre-17.0.17_linux-x64_bin.tar.gz
+  sha256: c45d572629c722b18a6254f7503a397dbfe474223afb3ac96ef462d27074f7a0
   cf_stacks:
   - cflinuxfs4
 
 - name: sapmachine
-  version: 17.0.13
-  uri: https://github.com/SAP/SapMachine/releases/download/sapmachine-17.0.13/sapmachine-jre-17.0.13_linux-x64_bin.tar.gz
-  sha256: b5f16befcb6415cfcf3bdb57b361c8eeca8176d494cd1e6c067cd56acec1afe6
+  version: 21.0.9
+  uri: https://github.com/SAP/SapMachine/releases/download/sapmachine-21.0.9/sapmachine-jre-21.0.9_linux-x64_bin.tar.gz
+  sha256: 4cc6b1501a2fe8ae0f106342b3c00eec00b7886ce9215760b611cc9975bd339b
+  cf_stacks:
+  - cflinuxfs4
+
+- name: sapmachine
+  version: 25.0.1
+  uri: https://github.com/SAP/SapMachine/releases/download/sapmachine-25.0.1/sapmachine-jre-25.0.1_linux-x64_bin.tar.gz
+  sha256: 6bc007201b97214a3883e2da92dc80b2e5ae29378a7a77ab4077d74ccbfdfdbd
   cf_stacks:
   - cflinuxfs4
 

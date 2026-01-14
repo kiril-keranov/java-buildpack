@@ -105,7 +105,7 @@ func testJavaMain(platform switchblade.Platform, fixtures string) func(*testing.
 			it("deploys with SAPMachine JRE from manifest", func() {
 				_, logs, err := platform.Deploy.
 					WithEnv(map[string]string{
-						"BP_JAVA_VERSION":       "11",
+						"BP_JAVA_VERSION":       "17",
 						"JBP_CONFIG_COMPONENTS": `{jres: ["JavaBuildpack::Jre::SapMachineJRE"]}`,
 					}).
 					Execute(name, filepath.Join(fixtures, "containers", "main"))
@@ -114,7 +114,7 @@ func testJavaMain(platform switchblade.Platform, fixtures string) func(*testing.
 				// Verify SAPMachine JRE was installed from manifest
 				Expect(logs.String()).To(ContainSubstring("Java Buildpack"))
 				Expect(logs.String()).To(ContainSubstring("Installing SAP Machine"))
-				Expect(logs.String()).To(ContainSubstring("11."))
+				Expect(logs.String()).To(ContainSubstring("17."))
 			})
 		})
 	}

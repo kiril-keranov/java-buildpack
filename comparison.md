@@ -180,11 +180,11 @@ The following frameworks were added since the initial migration:
 
 #### Included in Default Manifest (3 JREs) ✅
 
-| JRE | Ruby File | Go File | Versions Supported | Default | Status |
-|-----|-----------|---------|-------------------|---------|--------|
-| **OpenJDK** | `open_jdk_jre.rb` | `openjdk.go` | 8, 11, 17, 21, 23 | 17.x | ✅ Complete |
-| **Zulu (Azul)** | `zulu_jre.rb` | `zulu.go` | 8, 11, 17 | 11.x | ✅ Complete |
-| **SAP Machine** | `sap_machine_jre.rb` | `sapmachine.go` | 11, 17 | 17.x | ✅ Complete |
+| JRE | Ruby File | Go File | Versions Supported                          | Default | Status |
+|-----|-----------|---------|---------------------------------------------|---------|--------|
+| **OpenJDK** | `open_jdk_jre.rb` | `openjdk.go` | 8, 11, 17, 21, 23                           | 17.x    | ✅ Complete |
+| **Zulu (Azul)** | `zulu_jre.rb` | `zulu.go` | 8, 11, 17                                   | 11.x    | ✅ Complete |
+| **SAP Machine** | `sap_machine_jre.rb` | `sapmachine.go` | 11(ruby only), 17, 21(go only), 25(go only) | 21.x    | ✅ Complete |
 
 #### BYOL JREs - Require Custom Manifest (4 JREs) ✅
 
