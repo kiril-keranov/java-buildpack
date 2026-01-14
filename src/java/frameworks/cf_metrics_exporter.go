@@ -53,7 +53,7 @@ func (f *CfMetricsExporterFramework) Supply() error {
 	if err != nil {
 		return err
 	}
-	agentDir := filepath.Join(f.ctx.Stager.DepDir(), ".java-buildpack", cfMetricsExporterDirName)
+	agentDir := filepath.Join(f.ctx.Stager.DepDir(), cfMetricsExporterDirName)
 	if err := os.MkdirAll(agentDir, 0755); err != nil {
 		return fmt.Errorf("failed to create agent dir: %w", err)
 	}
@@ -77,7 +77,7 @@ func (f *CfMetricsExporterFramework) Finalize() error {
 		return err
 	}
 	jarName := fmt.Sprintf("cf-metrics-exporter-%s.jar", dep.Version)
-	agentPath := filepath.Join(".java-buildpack", cfMetricsExporterDirName, jarName)
+	agentPath := filepath.Join(f.ctx.Stager.DepDir(), cfMetricsExporterDirName, jarName)
 	props := os.Getenv("CF_METRICS_EXPORTER_PROPS")
 	var javaOpt string
 	if props != "" {
