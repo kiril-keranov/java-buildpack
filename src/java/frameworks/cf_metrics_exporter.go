@@ -12,12 +12,25 @@ import (
 const cfMetricsExporterDependencyName = "cf-metrics-exporter"
 const cfMetricsExporterDirName = "cf_metrics_exporter"
 
+// Installer interface for dependency installation
+// Allows for mocking in tests
+// Only the InstallDependency method is needed for this framework
+// (matches the signature of libbuildpack.Installer)
+type Installer interface {
+	InstallDependency(dep libbuildpack.Dependency, outputDir string) error
+}
+
 type CfMetricsExporterFramework struct {
-	ctx *common.Context
+	ctx       *common.Context
+	installer Installer
 }
 
 func NewCfMetricsExporterFramework(ctx *common.Context) *CfMetricsExporterFramework {
-	return &CfMetricsExporterFramework{ctx: ctx}
+	installer := ctx.Installer
+	if installer == nil {
+		installer = libbuildpack.NewInstaller(ctx.Manifest)
+	}
+	return &CfMetricsExporterFramework{ctx: ctx, installer: installer}
 }
 
 func (f *CfMetricsExporterFramework) Detect() (string, error) {
@@ -58,10 +71,24 @@ func (f *CfMetricsExporterFramework) Supply() error {
 		return fmt.Errorf("failed to create agent dir: %w", err)
 	}
 	jarName := fmt.Sprintf("cf-metrics-exporter-%s.jar", dep.Version)
-	agentPath := filepath.Join(agentDir, jarName)
-	if _, err := os.Stat(agentPath); os.IsNotExist(err) {
-		if err := f.ctx.Installer.InstallDependency(dep, agentPath); err != nil {
+	jarPath := filepath.Join(agentDir, jarName)
+	if _, err := os.Stat(jarPath); os.IsNotExist(err) {
+		if err := f.installer.InstallDependency(dep, agentDir); err != nil {
 			return fmt.Errorf("failed to download cf-metrics-exporter: %w", err)
+		}
+		// Find the actual JAR file and rename if needed
+		files, err := os.ReadDir(agentDir)
+		if err != nil {
+			return fmt.Errorf("failed to read agent dir: %w", err)
+		}
+		for _, file := range files {
+			if filepath.Ext(file.Name()) == ".jar" && file.Name() != jarName {
+				src := filepath.Join(agentDir, file.Name())
+				if err := os.Rename(src, jarPath); err != nil {
+					return fmt.Errorf("failed to rename jar: %w", err)
+				}
+				break
+			}
 		}
 	}
 	return nil
