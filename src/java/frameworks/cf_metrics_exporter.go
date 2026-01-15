@@ -40,7 +40,7 @@ func (f *CfMetricsExporterFramework) Detect() (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("cf-metrics-exporter version not found in manifest: %w", err)
 		}
-		return fmt.Sprintf("cf-metrics-exporter-%s", version), nil
+		return fmt.Sprintf("%s (%s)", version.Name, version.Version), nil
 	}
 	return "", nil
 }
