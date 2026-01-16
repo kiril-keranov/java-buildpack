@@ -218,7 +218,6 @@ Check if the url, for which the issue appears, is accessible from the host machi
   1. Execute `docker network prune` - this will remove any unused networks including `switchblade-internal` bridge networks set while running the integration tests.
   2. Execute `sudo systemctl restart docker` - this restarts Docker and resets its networking stack, which can resolve stale or broken network routes in the Docker daemon.
 
-
 - Integration test is executed successfully but the following issue appears on test container removal:
 ```
 tomcat_test.go:34: 
