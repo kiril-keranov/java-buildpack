@@ -214,7 +214,7 @@ Output:
                    Download [https://java-buildpack.cloudfoundry.org/openjdk/jammy/x86_64/bellsoft-jre8u452%2B11-linux-amd64.tar.gz]
                    error: Get "https://java-buildpack.cloudfoundry.org/openjdk/jammy/x86_64/bellsoft-jre8u452%2B11-linux-amd64.tar.gz": dial tcp 104.18.17.211:443: connect: no route to host, retrying in 712.622241ms...
 ```
-Check if the url, for which the issue appears, is accessible from the host machine. If the url appears reachable and can be accessed successfully, check again from within the corresponding switchblade container where the test is run. This can be achieved with `docker exec -it <container_id> /bin/bash` while the container is still up in order to ssh to it and furhter try for example to issue a `curl` to the url. If the `connect: no route to host` can be reproduced from within the corresponding switchblade container, you can do the following in order to mitigate it:
+Check if the url, for which the issue appears, is accessible from the host machine. If the url appears reachable and can be accessed successfully, check again from within the corresponding switchblade container where the test is run. This can be achieved with `docker exec -it <container_id> /bin/bash` while the container is still up in order to ssh to it and further try for example to issue a `curl` to the url. If the `connect: no route to host` can be reproduced from within the corresponding switchblade container, you can try the following in order to mitigate it:
   1. Execute `docker network prune` - this will remove any unused networks including `switchblade-internal` bridge networks set while running the integration tests.
   2. Execute `sudo systemctl restart docker` - restarting docker.
 
