@@ -244,7 +244,7 @@ tomcat_test.go:34:
             }
 ```
 
-To mitigate the above issue try executing `sudo systemctl restart docker.socket docker.service`.
+To mitigate the above issue try executing `sudo systemctl restart docker.socket docker.service`. This command restarts both the Docker systemd socket unit (which accepts client connections) and the main Docker daemon service. Doing so refreshes the daemon’s runtime state and can clear stale processes, file handles, or permission-related inconsistencies that prevent containers from being stopped or removed, resolving the `permission denied` error seen during teardown.
 
 ### GitHub authentication errors with Docker platform
 If you see errors like "Bad credentials" or "401 Unauthorized" when running Docker platform tests:
