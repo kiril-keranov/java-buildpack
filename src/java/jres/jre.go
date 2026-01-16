@@ -225,6 +225,13 @@ func GetJREVersion(ctx *common.Context, jreName string) (libbuildpack.Dependency
 		}
 	}
 
+	if envVal == "" && jreName == "sapmachine" {
+		envVal = os.Getenv("JBP_CONFIG_SAP_MACHINE_JRE")
+		if envVal != "" {
+			envKey = "JBP_CONFIG_SAP_MACHINE_JRE"
+		}
+	}
+
 	if envVal != "" {
 		ctx.Log.Debug("Found %s='%s'", envKey, envVal)
 
