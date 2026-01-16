@@ -216,7 +216,7 @@ Output:
 ```
 Check if the url, for which the issue appears, is accessible from the host machine. If the url appears reachable and can be accessed successfully, check again from within the corresponding switchblade container where the test is run. This can be achieved with `docker exec -it <container_id> /bin/bash` while the container is still up in order to access the container interactively and, for example, issue a `curl` to the url from within it. If the `connect: no route to host` can be reproduced from within the corresponding switchblade container, you can try the following in order to mitigate it:
   1. Execute `docker network prune` - this will remove any unused networks including `switchblade-internal` bridge networks set while running the integration tests.
-  2. Execute `sudo systemctl restart docker` - restarting docker.
+  2. Execute `sudo systemctl restart docker` - this restarts Docker and resets its networking stack, which can resolve stale or broken network routes in the Docker daemon.
 
 
 - Integration test is executed successfully but the following issue appears on test container removal:
