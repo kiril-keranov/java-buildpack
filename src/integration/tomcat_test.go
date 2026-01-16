@@ -262,6 +262,50 @@ func testTomcat(platform switchblade.Platform, fixtures string) func(*testing.T,
 			})
 		})
 
+		context("with JBP_CONFIG_SAP_MACHINE_JRE version selection", func() {
+			it("respects JBP_CONFIG_SAP_MACHINE_JRE(version 17) over manifest default", func() {
+				deployment, logs, err := platform.Deploy.
+					WithEnv(map[string]string{
+						"JBP_CONFIG_COMPONENTS":      "{ jres: [\"JavaBuildpack::Jre::SapMachineJRE\"] }",
+						"JBP_CONFIG_SAP_MACHINE_JRE": "{ jre: {version: 17.+} }",
+					}).
+					Execute(name, filepath.Join(fixtures, "containers", "tomcat_jakarta"))
+
+				Expect(err).NotTo(HaveOccurred(), logs.String)
+
+				Expect(logs.String()).To(ContainSubstring("Installing SAP Machine 17."))
+				Eventually(deployment).Should(matchers.Serve(ContainSubstring("OK")))
+			})
+
+			it("respects JBP_CONFIG_SAP_MACHINE_JRE(version 21)", func() {
+				deployment, logs, err := platform.Deploy.
+					WithEnv(map[string]string{
+						"JBP_CONFIG_COMPONENTS":      "{ jres: [\"JavaBuildpack::Jre::SapMachineJRE\"] }",
+						"JBP_CONFIG_SAP_MACHINE_JRE": "{ jre: {version: 21.+} }",
+					}).
+					Execute(name, filepath.Join(fixtures, "containers", "tomcat_jakarta"))
+
+				Expect(err).NotTo(HaveOccurred(), logs.String)
+
+				Expect(logs.String()).To(ContainSubstring("Installing SAP Machine 21."))
+				Eventually(deployment).Should(matchers.Serve(ContainSubstring("OK")))
+			})
+
+			it("respects JBP_CONFIG_SAP_MACHINE_JRE(version 25) over manifest default", func() {
+				deployment, logs, err := platform.Deploy.
+					WithEnv(map[string]string{
+						"JBP_CONFIG_COMPONENTS":      "{ jres: [\"JavaBuildpack::Jre::SapMachineJRE\"] }",
+						"JBP_CONFIG_SAP_MACHINE_JRE": "{ jre: {version: 25.+} }",
+					}).
+					Execute(name, filepath.Join(fixtures, "containers", "tomcat_jakarta"))
+
+				Expect(err).NotTo(HaveOccurred(), logs.String)
+
+				Expect(logs.String()).To(ContainSubstring("Installing SAP Machine 25."))
+				Eventually(deployment).Should(matchers.Serve(ContainSubstring("OK")))
+			})
+		})
+
 		context("with external Tomcat configuration", func() {
 			it("downloads and applies configuration from real repository", func() {
 				// This test verifies the external configuration workflow:
