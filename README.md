@@ -45,10 +45,11 @@ $ cf set-staging-environment-variable-group '{"JBP_DEFAULT_OPEN_JDK_JRE":"{jre: 
 $ cf set-staging-environment-variable-group '{"JBP_DEFAULT_REPOSITORY": "{default_repository_root: \"http://repo.example.io\" }"}'
 ```
 
-3. To change the default JVM vendor across all applications on a foundation. Be careful to ensure that your JSON is properly escaped.
+3. **DEPRECATED:** To change the default JVM vendor across all applications on a foundation, use JRE-specific environment variables instead. `JBP_CONFIG_COMPONENTS` for JRE selection is no longer supported in the Go buildpack.
 
 ```bash
-$ cf set-staging-environment-variable-group '{"JBP_DEFAULT_COMPONENTS": "{jres: [\"JavaBuildpack::Jre::ZuluJRE\"]}"}'
+# Use this instead
+$ cf set-staging-environment-variable-group '{"JBP_DEFAULT_ZULU_JRE":"{jre: {version: 17.+ }}"}'
 ```
 
 ### Application Developer
@@ -90,6 +91,27 @@ env:
 env:
   JBP_CONFIG_TOMCAT: '{ tomcat: { version: 8.0.+ } }'
 ```
+
+See the [Environment Variables][] documentation for more information.
+
+### JRE Selection
+
+**Important:** The Go buildpack does NOT support `JBP_CONFIG_COMPONENTS` for JRE selection (this differs from the Ruby buildpack). This environment variable is deprecated in favor of using JRE-specific configuration variables.
+
+To select a different JRE, use the appropriate `JBP_CONFIG_<JRE_NAME>` variable:
+
+```bash
+# Switch to SapMachine JRE
+$ cf set-env my-app JBP_CONFIG_SAP_MACHINE_JRE '{ jre: { version: 17.+ }}'
+
+# Switch to Zulu JRE
+$ cf set-env my-app JBP_CONFIG_ZULU_JRE '{ jre: { version: 21.+ }}'
+
+# For BYOL JREs (Oracle, GraalVM, IBM, Zing), you must first add them to manifest.yml
+# See https://github.com/cloudfoundry/java-buildpack/blob/main/docs/custom-jre-usage.md
+```
+
+The buildpack will automatically detect and use the configured JRE without requiring `JBP_CONFIG_COMPONENTS`.
 
 See the [Environment Variables][] documentation for more information.
 
