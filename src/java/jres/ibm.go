@@ -36,21 +36,9 @@ func (i *IBMJRE) Name() string {
 }
 
 // Detect returns true if IBM JRE should be used
-// IBM JRE requires explicit configuration via JBP_CONFIG_COMPONENTS or JBP_CONFIG_IBM_JRE
+// IBM JRE requires explicit configuration via JBP_CONFIG_IBM_JRE environment variable
 func (i *IBMJRE) Detect() (bool, error) {
-	// Check if explicitly configured via environment
-	// Format: JBP_CONFIG_COMPONENTS='{jres: ["JavaBuildpack::Jre::IbmJRE"]}'
-	configuredJRE := os.Getenv("JBP_CONFIG_COMPONENTS")
-	if configuredJRE != "" && (containsString(configuredJRE, "IbmJRE") || containsString(configuredJRE, "IBM")) {
-		return true, nil
-	}
-
-	// Also check legacy config
-	if DetectJREByEnv("ibm_jre") {
-		return true, nil
-	}
-
-	return false, nil
+	return DetectJREByEnv("ibm"), nil
 }
 
 // Supply installs the IBM JRE and its components

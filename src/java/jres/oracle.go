@@ -35,21 +35,9 @@ func (o *OracleJRE) Name() string {
 }
 
 // Detect returns true if Oracle JRE should be used
-// Oracle JRE requires explicit configuration via JBP_CONFIG_COMPONENTS or JBP_CONFIG_ORACLE_JRE
+// Oracle JRE requires explicit configuration via JBP_CONFIG_ORACLE_JRE environment variable
 func (o *OracleJRE) Detect() (bool, error) {
-	// Check if explicitly configured via environment
-	// Format: JBP_CONFIG_COMPONENTS='{jres: ["JavaBuildpack::Jre::OracleJRE"]}'
-	configuredJRE := os.Getenv("JBP_CONFIG_COMPONENTS")
-	if configuredJRE != "" && (containsString(configuredJRE, "OracleJRE") || containsString(configuredJRE, "Oracle")) {
-		return true, nil
-	}
-
-	// Also check legacy config
-	if DetectJREByEnv("oracle_jre") {
-		return true, nil
-	}
-
-	return false, nil
+	return DetectJREByEnv("oracle"), nil
 }
 
 // Supply installs the Oracle JRE and its components

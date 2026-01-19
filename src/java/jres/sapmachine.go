@@ -34,21 +34,9 @@ func (s *SapMachineJRE) Name() string {
 }
 
 // Detect returns true if SAP Machine JRE should be used
-// SAP Machine is selected via JBP_CONFIG_COMPONENTS environment variable
+// SAP Machine is selected via JBP_CONFIG_SAP_MACHINE_JRE environment variable
 func (s *SapMachineJRE) Detect() (bool, error) {
-	// Check if explicitly configured via environment
-	// Format: JBP_CONFIG_COMPONENTS='{jres: ["JavaBuildpack::Jre::SapMachineJRE"]}'
-	configuredJRE := os.Getenv("JBP_CONFIG_COMPONENTS")
-	if configuredJRE != "" && (containsString(configuredJRE, "SapMachineJRE") || containsString(configuredJRE, "SapMachine")) {
-		return true, nil
-	}
-
-	// Also check legacy config
-	if DetectJREByEnv("sap_machine_jre") {
-		return true, nil
-	}
-
-	return false, nil
+	return DetectJREByEnv("sapmachine"), nil
 }
 
 // Supply installs the SAP Machine JRE and its components

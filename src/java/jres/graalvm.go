@@ -34,21 +34,9 @@ func (g *GraalVMJRE) Name() string {
 }
 
 // Detect returns true if GraalVM JRE should be used
-// GraalVM is selected via JBP_CONFIG_COMPONENTS environment variable
+// GraalVM is selected via JBP_CONFIG_GRAAL_VM_JRE environment variable
 func (g *GraalVMJRE) Detect() (bool, error) {
-	// Check if explicitly configured via environment
-	// Format: JBP_CONFIG_COMPONENTS='{jres: ["JavaBuildpack::Jre::GraalVmJRE"]}'
-	configuredJRE := os.Getenv("JBP_CONFIG_COMPONENTS")
-	if configuredJRE != "" && (containsString(configuredJRE, "GraalVmJRE") || containsString(configuredJRE, "GraalVM")) {
-		return true, nil
-	}
-
-	// Also check legacy config
-	if DetectJREByEnv("graal_vm_jre") {
-		return true, nil
-	}
-
-	return false, nil
+	return DetectJREByEnv("graalvm"), nil
 }
 
 // Supply installs the GraalVM JRE and its components

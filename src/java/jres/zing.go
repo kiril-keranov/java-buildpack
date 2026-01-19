@@ -34,21 +34,9 @@ func (z *ZingJRE) Name() string {
 }
 
 // Detect returns true if Zing JRE should be used
-// Zing JRE requires explicit configuration via JBP_CONFIG_COMPONENTS or JBP_CONFIG_ZING_JRE
+// Zing JRE requires explicit configuration via JBP_CONFIG_ZING_JRE environment variable
 func (z *ZingJRE) Detect() (bool, error) {
-	// Check if explicitly configured via environment
-	// Format: JBP_CONFIG_COMPONENTS='{jres: ["JavaBuildpack::Jre::ZingJRE"]}'
-	configuredJRE := os.Getenv("JBP_CONFIG_COMPONENTS")
-	if configuredJRE != "" && (containsString(configuredJRE, "ZingJRE") || containsString(configuredJRE, "Zing")) {
-		return true, nil
-	}
-
-	// Also check legacy config
-	if DetectJREByEnv("zing_jre") {
-		return true, nil
-	}
-
-	return false, nil
+	return DetectJREByEnv("zing"), nil
 }
 
 // Supply installs the Zing JRE

@@ -35,21 +35,9 @@ func (o *OpenJDKJRE) Name() string {
 }
 
 // Detect returns true if OpenJDK should be used
-// OpenJDK is selected via JBP_CONFIG_COMPONENTS environment variable
+// OpenJDK is selected via JBP_CONFIG_OPEN_JDK_JRE environment variable
 func (o *OpenJDKJRE) Detect() (bool, error) {
-	// Check if explicitly configured via environment
-	// Format: JBP_CONFIG_COMPONENTS='{jres: ["JavaBuildpack::Jre::OpenJdkJRE"]}'
-	configuredJRE := os.Getenv("JBP_CONFIG_COMPONENTS")
-	if configuredJRE != "" && (containsString(configuredJRE, "OpenJdkJRE") || containsString(configuredJRE, "OpenJDK")) {
-		return true, nil
-	}
-
-	// Also check legacy config
-	if DetectJREByEnv("open_jdk_jre") {
-		return true, nil
-	}
-
-	return false, nil
+	return DetectJREByEnv("openjdk"), nil
 }
 
 // Supply installs the OpenJDK JRE and its components

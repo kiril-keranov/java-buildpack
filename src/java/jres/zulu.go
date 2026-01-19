@@ -34,21 +34,9 @@ func (z *ZuluJRE) Name() string {
 }
 
 // Detect returns true if Zulu JRE should be used
-// Zulu is selected via JBP_CONFIG_COMPONENTS environment variable
+// Zulu is selected via JBP_CONFIG_ZULU_JRE environment variable
 func (z *ZuluJRE) Detect() (bool, error) {
-	// Check if explicitly configured via environment
-	// Format: JBP_CONFIG_COMPONENTS='{jres: ["JavaBuildpack::Jre::ZuluJRE"]}'
-	configuredJRE := os.Getenv("JBP_CONFIG_COMPONENTS")
-	if configuredJRE != "" && (containsString(configuredJRE, "ZuluJRE") || containsString(configuredJRE, "Zulu")) {
-		return true, nil
-	}
-
-	// Also check legacy config
-	if DetectJREByEnv("zulu_jre") {
-		return true, nil
-	}
-
-	return false, nil
+	return DetectJREByEnv("zulu"), nil
 }
 
 // Supply installs the Zulu JRE and its components
