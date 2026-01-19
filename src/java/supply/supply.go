@@ -52,7 +52,6 @@ func Run(s *Supplier) error {
 
 	// Install JRE
 	if err := s.installJRE(); err != nil {
-		s.Log.Error("Failed to install JRE: %s", err.Error())
 		return err
 	}
 

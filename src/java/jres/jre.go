@@ -184,6 +184,18 @@ func DetectJREByEnv(jreName string) bool {
 	return os.Getenv(envKey) != ""
 }
 
+// jreNameToDocumentedEnvVar maps JRE names to their documented environment variable names
+// This maintains backward compatibility with the documented JBP_CONFIG_*_JRE convention
+var jreNameToDocumentedEnvVar = map[string]string{
+	"openjdk":    "JBP_CONFIG_OPEN_JDK_JRE",
+	"sapmachine": "JBP_CONFIG_SAP_MACHINE_JRE",
+	"zulu":       "JBP_CONFIG_ZULU_JRE",
+	"graalvm":    "JBP_CONFIG_GRAAL_VM_JRE",
+	"ibm":        "JBP_CONFIG_IBM_JRE",
+	"oracle":     "JBP_CONFIG_ORACLE_JRE",
+	"zing":       "JBP_CONFIG_ZING_JRE",
+}
+
 // GetJREVersion gets the desired JRE version from environment or uses default
 // Supports BP_JAVA_VERSION (simple version) and JBP_CONFIG_<JRE_NAME> (complex config)
 func GetJREVersion(ctx *common.Context, jreName string) (libbuildpack.Dependency, error) {
@@ -212,16 +224,19 @@ func GetJREVersion(ctx *common.Context, jreName string) (libbuildpack.Dependency
 		return libbuildpack.Dependency{Name: jreName, Version: matchedVersion}, nil
 	}
 
-	// Check for legacy JBP_CONFIG_<JRE_NAME> environment variable
-	// For OpenJDK, support both JBP_CONFIG_OPENJDK and JBP_CONFIG_OPEN_JDK_JRE for backward compatibility
+	// Check for JBP_CONFIG_<JRE_NAME> environment variable
+	// Try both the auto-generated name and the documented name for backward compatibility
 	envKey := fmt.Sprintf("JBP_CONFIG_%s", strings.ToUpper(strings.ReplaceAll(jreName, "-", "_")))
 	envVal := os.Getenv(envKey)
 
-	// Special case for OpenJDK: also check JBP_CONFIG_OPEN_JDK_JRE (documented name)
-	if envVal == "" && jreName == "openjdk" {
-		envVal = os.Getenv("JBP_CONFIG_OPEN_JDK_JRE")
-		if envVal != "" {
-			envKey = "JBP_CONFIG_OPEN_JDK_JRE"
+	// If not found, check for documented environment variable name (e.g., JBP_CONFIG_OPEN_JDK_JRE)
+	// This ensures backward compatibility with documented naming conventions
+	if envVal == "" {
+		if documentedEnvKey, exists := jreNameToDocumentedEnvVar[jreName]; exists {
+			envVal = os.Getenv(documentedEnvKey)
+			if envVal != "" {
+				envKey = documentedEnvKey
+			}
 		}
 	}
 

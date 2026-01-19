@@ -197,6 +197,54 @@ Ensure Docker is running and you have permission to use it:
 ```bash
 docker ps
 ```
+- The following error appears during staging while running an integration test:
+```
+Output:
+            {"status":"Pulling from cloudfoundry/cflinuxfs4","id":"latest"}
+            {"status":"Digest: sha256:77bf7297d2fbb4b787b73df2a4d0a911e5f0695321a6f0219a44c19be5d6bebe"}
+            {"status":"Status: Image is up to date for cloudfoundry/cflinuxfs4:latest"}
+            -----> Java Buildpack version dev
+            -----> Supplying Java
+                   Detected container: Tomcat
+                   No JRE explicitly configured, using default: OpenJDK
+                   Selected JRE: OpenJDK
+            -----> Installing OpenJDK JRE
+                   Installing OpenJDK 8.0.452
+            -----> Installing openjdk 8.0.452
+                   Download [https://java-buildpack.cloudfoundry.org/openjdk/jammy/x86_64/bellsoft-jre8u452%2B11-linux-amd64.tar.gz]
+                   error: Get "https://java-buildpack.cloudfoundry.org/openjdk/jammy/x86_64/bellsoft-jre8u452%2B11-linux-amd64.tar.gz": dial tcp 104.18.17.211:443: connect: no route to host, retrying in 712.622241ms...
+```
+Check whether the URL, for which the issue appears, is accessible from the host machine. If the URL appears reachable and can be accessed successfully, check again from within the corresponding Switchblade container where the test is run. This can be achieved with `docker exec -it <container_id> /bin/bash` while the container is still up in order to access the container interactively and, for example, issue a `curl` to the URL from within it. If the `connect: no route to host` can be reproduced from within the corresponding Switchblade container, you can try the following in order to mitigate it:
+  1. Execute `docker network prune` - this will remove any unused networks including `switchblade-internal` bridge networks set while running the integration tests.
+  2. Execute `sudo systemctl restart docker` - this restarts Docker and resets its networking stack, which can resolve stale or broken network routes in the Docker daemon.
+
+- Integration test is executed successfully but the following issue appears on test container removal:
+```
+tomcat_test.go:34: 
+        Expected success, but got an error:
+            <*fmt.wrapError | 0xc00034f140>: 
+            failed to run teardown phase: failed to remove container: Error response from daemon: cannot remove container "switchblade-pqsal7svg": could not kill container: permission denied
+            {
+                msg: "failed to run teardown phase: failed to remove container: Error response from daemon: cannot remove container \"switchblade-pqsal7svg\": could not kill container: permission denied",
+                err: <*fmt.wrapError | 0xc00034f0c0>{
+                    msg: "failed to remove container: Error response from daemon: cannot remove container \"switchblade-pqsal7svg\": could not kill container: permission denied",
+                    err: <errdefs.errSystem>{
+                        error: <*errors.withStack | 0xc000405b60>{
+                            error: <*errors.withMessage | 0xc00034f000>{
+                                cause: <*errors.fundamental | 0xc000405b30>{
+                                    msg: "cannot remove container \"switchblade-pqsal7svg\": could not kill container: permission denied",
+                                    stack: [0x795cc0, 0x79517c, 0x790307, 0x7902a3, 0x7a2263, 0x7a807a, 0x7f6c2b, 0x7ad476, 0x7ad39f, 0x7acb35, 0x7abdb5, 0x52e46a, 0x485c21],
+                                },
+                                msg: "Error response from daemon",
+                            },
+                            stack: [0x795de5, 0x79517c, 0x790307, 0x7902a3, 0x7a2263, 0x7a807a, 0x7f6c2b, 0x7ad476, 0x7ad39f, 0x7acb35, 0x7abdb5, 0x52e46a, 0x485c21],
+                        },
+                    },
+                },
+            }
+```
+
+To mitigate the above issue try executing `sudo systemctl restart docker.socket docker.service`. This command restarts both the Docker systemd socket unit (which accepts client connections) and the main Docker daemon service. Doing so refreshes the daemon’s runtime state and can clear stale processes, file handles, or permission-related inconsistencies that prevent containers from being stopped or removed, resolving the `permission denied` error seen during teardown.
 
 ### GitHub authentication errors with Docker platform
 If you see errors like "Bad credentials" or "401 Unauthorized" when running Docker platform tests:

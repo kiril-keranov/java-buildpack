@@ -343,6 +343,62 @@ dependencies:
 				Expect(dep.Version).To(Equal("21.0.5"))
 			})
 		})
+
+		Context("documented environment variables for all JREs", func() {
+			It("should resolve JBP_CONFIG_SAP_MACHINE_JRE for SAPMachine", func() {
+				os.Setenv("JBP_CONFIG_SAP_MACHINE_JRE", "{jre: {version: 17.+}}")
+				defer os.Unsetenv("JBP_CONFIG_SAP_MACHINE_JRE")
+
+				_, err := jres.GetJREVersion(ctx, "sapmachine")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("no versions of sapmachine found"))
+			})
+
+			It("should resolve JBP_CONFIG_ZULU_JRE for Zulu", func() {
+				os.Setenv("JBP_CONFIG_ZULU_JRE", "{jre: {version: 17.+}}")
+				defer os.Unsetenv("JBP_CONFIG_ZULU_JRE")
+
+				_, err := jres.GetJREVersion(ctx, "zulu")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("no versions of zulu found"))
+			})
+
+			It("should resolve JBP_CONFIG_GRAAL_VM_JRE for GraalVM", func() {
+				os.Setenv("JBP_CONFIG_GRAAL_VM_JRE", "{jre: {version: 17.+}}")
+				defer os.Unsetenv("JBP_CONFIG_GRAAL_VM_JRE")
+
+				_, err := jres.GetJREVersion(ctx, "graalvm")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("no versions of graalvm found"))
+			})
+
+			It("should resolve JBP_CONFIG_IBM_JRE for IBM", func() {
+				os.Setenv("JBP_CONFIG_IBM_JRE", "{jre: {version: 17.+}}")
+				defer os.Unsetenv("JBP_CONFIG_IBM_JRE")
+
+				_, err := jres.GetJREVersion(ctx, "ibm")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("no versions of ibm found"))
+			})
+
+			It("should resolve JBP_CONFIG_ORACLE_JRE for Oracle", func() {
+				os.Setenv("JBP_CONFIG_ORACLE_JRE", "{jre: {version: 17.+}}")
+				defer os.Unsetenv("JBP_CONFIG_ORACLE_JRE")
+
+				_, err := jres.GetJREVersion(ctx, "oracle")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("no versions of oracle found"))
+			})
+
+			It("should resolve JBP_CONFIG_ZING_JRE for Zing", func() {
+				os.Setenv("JBP_CONFIG_ZING_JRE", "{jre: {version: 17.+}}")
+				defer os.Unsetenv("JBP_CONFIG_ZING_JRE")
+
+				_, err := jres.GetJREVersion(ctx, "zing")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("no versions of zing found"))
+			})
+		})
 	})
 
 	Describe("DetermineJavaVersion", func() {
