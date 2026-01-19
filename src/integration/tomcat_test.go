@@ -266,7 +266,6 @@ func testTomcat(platform switchblade.Platform, fixtures string) func(*testing.T,
 			it("respects JBP_CONFIG_SAP_MACHINE_JRE(version 17) over manifest default", func() {
 				deployment, logs, err := platform.Deploy.
 					WithEnv(map[string]string{
-						"JBP_CONFIG_COMPONENTS":      "{ jres: [\"JavaBuildpack::Jre::SapMachineJRE\"] }",
 						"JBP_CONFIG_SAP_MACHINE_JRE": "{ jre: {version: 17.+} }",
 					}).
 					Execute(name, filepath.Join(fixtures, "containers", "tomcat_jakarta"))
@@ -280,7 +279,6 @@ func testTomcat(platform switchblade.Platform, fixtures string) func(*testing.T,
 			it("respects JBP_CONFIG_SAP_MACHINE_JRE(version 21)", func() {
 				deployment, logs, err := platform.Deploy.
 					WithEnv(map[string]string{
-						"JBP_CONFIG_COMPONENTS":      "{ jres: [\"JavaBuildpack::Jre::SapMachineJRE\"] }",
 						"JBP_CONFIG_SAP_MACHINE_JRE": "{ jre: {version: 21.+} }",
 					}).
 					Execute(name, filepath.Join(fixtures, "containers", "tomcat_jakarta"))
@@ -294,7 +292,6 @@ func testTomcat(platform switchblade.Platform, fixtures string) func(*testing.T,
 			it("respects JBP_CONFIG_SAP_MACHINE_JRE(version 25) over manifest default", func() {
 				deployment, logs, err := platform.Deploy.
 					WithEnv(map[string]string{
-						"JBP_CONFIG_COMPONENTS":      "{ jres: [\"JavaBuildpack::Jre::SapMachineJRE\"] }",
 						"JBP_CONFIG_SAP_MACHINE_JRE": "{ jre: {version: 25.+} }",
 					}).
 					Execute(name, filepath.Join(fixtures, "containers", "tomcat_jakarta"))

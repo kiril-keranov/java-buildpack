@@ -105,8 +105,7 @@ func testJavaMain(platform switchblade.Platform, fixtures string) func(*testing.
 			it("deploys with SAPMachine JRE from manifest", func() {
 				_, logs, err := platform.Deploy.
 					WithEnv(map[string]string{
-						"BP_JAVA_VERSION":       "17",
-						"JBP_CONFIG_COMPONENTS": `{jres: ["JavaBuildpack::Jre::SapMachineJRE"]}`,
+						"JBP_CONFIG_SAP_MACHINE_JRE": `{jre: {version: 17.+}}`,
 					}).
 					Execute(name, filepath.Join(fixtures, "containers", "main"))
 				Expect(err).NotTo(HaveOccurred(), logs.String)
