@@ -1,6 +1,7 @@
 package jres_test
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"time"
@@ -14,11 +15,12 @@ import (
 
 var _ = Describe("JRE Registry", func() {
 	var (
-		ctx      *common.Context
-		registry *jres.Registry
-		buildDir string
-		depsDir  string
-		cacheDir string
+		ctx       *common.Context
+		registry  *jres.Registry
+		buildDir  string
+		depsDir   string
+		cacheDir  string
+		logBuffer *bytes.Buffer
 	)
 
 	BeforeEach(func() {
@@ -36,7 +38,8 @@ var _ = Describe("JRE Registry", func() {
 		err = os.MkdirAll(depsDir+"/0", 0755)
 		Expect(err).NotTo(HaveOccurred())
 
-		logger := libbuildpack.NewLogger(os.Stdout)
+		logBuffer = &bytes.Buffer{}
+		logger := libbuildpack.NewLogger(logBuffer)
 		manifest := &libbuildpack.Manifest{}
 		installer := &libbuildpack.Installer{}
 		stager := libbuildpack.NewStager([]string{buildDir, cacheDir, depsDir, "0"}, logger, manifest)
@@ -237,13 +240,28 @@ dependencies:
 
 	Describe("DetectJREByEnv", func() {
 		It("returns false when environment variable is not set", func() {
-			detected := jres.DetectJREByEnv("open-jdk-jre")
+			detected := jres.DetectJREByEnv("openjdk")
 			Expect(detected).To(BeFalse())
 		})
 
-		It("returns true when environment variable is set", func() {
+		It("returns true when documented environment variable is set", func() {
 			os.Setenv("JBP_CONFIG_OPEN_JDK_JRE", "{jre: {version: 17.+}}")
-			detected := jres.DetectJREByEnv("open-jdk-jre")
+			defer os.Unsetenv("JBP_CONFIG_OPEN_JDK_JRE")
+			detected := jres.DetectJREByEnv("openjdk")
+			Expect(detected).To(BeTrue())
+		})
+
+		It("returns true for SapMachine when JBP_CONFIG_SAP_MACHINE_JRE is set", func() {
+			os.Setenv("JBP_CONFIG_SAP_MACHINE_JRE", "{jre: {version: 17.+}}")
+			defer os.Unsetenv("JBP_CONFIG_SAP_MACHINE_JRE")
+			detected := jres.DetectJREByEnv("sapmachine")
+			Expect(detected).To(BeTrue())
+		})
+
+		It("returns true for Zulu when JBP_CONFIG_ZULU_JRE is set", func() {
+			os.Setenv("JBP_CONFIG_ZULU_JRE", "{jre: {version: 17.+}}")
+			defer os.Unsetenv("JBP_CONFIG_ZULU_JRE")
+			detected := jres.DetectJREByEnv("zulu")
 			Expect(detected).To(BeTrue())
 		})
 	})
@@ -529,6 +547,75 @@ IMPLEMENTOR="Eclipse Adoptium"`
 
 			optsFile := filepath.Join(depsDir, "0", "java_opts", "05_jre.opts")
 			Expect(optsFile).To(BeAnExistingFile())
+		})
+	})
+
+	Describe("JRE Detection with Environment Variables (Ruby buildpack compatibility)", func() {
+		var testLogBuffer *bytes.Buffer
+		var testCtx *common.Context
+
+		BeforeEach(func() {
+			testLogBuffer = &bytes.Buffer{}
+			logger := libbuildpack.NewLogger(testLogBuffer)
+			manifest := &libbuildpack.Manifest{}
+			installer := &libbuildpack.Installer{}
+			stager := libbuildpack.NewStager([]string{buildDir, cacheDir, depsDir, "0"}, logger, manifest)
+			command := &libbuildpack.Command{}
+
+			testCtx = &common.Context{
+				Stager:    stager,
+				Manifest:  manifest,
+				Installer: installer,
+				Log:       logger,
+				Command:   command,
+			}
+		})
+
+		It("detects SapMachine with only JBP_CONFIG_SAP_MACHINE_JRE (no JBP_CONFIG_COMPONENTS)", func() {
+			os.Setenv("JBP_CONFIG_SAP_MACHINE_JRE", "{jre: {version: 17.+}}")
+			defer os.Unsetenv("JBP_CONFIG_SAP_MACHINE_JRE")
+
+			sapmachine := jres.NewSapMachineJRE(testCtx)
+			detected, err := sapmachine.Detect()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(detected).To(BeTrue(), "SapMachine should be detected with JBP_CONFIG_SAP_MACHINE_JRE alone")
+		})
+
+		It("detects Zulu with only JBP_CONFIG_ZULU_JRE (no JBP_CONFIG_COMPONENTS)", func() {
+			os.Setenv("JBP_CONFIG_ZULU_JRE", "{jre: {version: 17.+}}")
+			defer os.Unsetenv("JBP_CONFIG_ZULU_JRE")
+
+			zulu := jres.NewZuluJRE(testCtx)
+			detected, err := zulu.Detect()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(detected).To(BeTrue(), "Zulu should be detected with JBP_CONFIG_ZULU_JRE alone")
+		})
+
+		It("detects OpenJDK with only JBP_CONFIG_OPEN_JDK_JRE (no JBP_CONFIG_COMPONENTS)", func() {
+			os.Setenv("JBP_CONFIG_OPEN_JDK_JRE", "{jre: {version: 17.+}}")
+			defer os.Unsetenv("JBP_CONFIG_OPEN_JDK_JRE")
+
+			openjdk := jres.NewOpenJDKJRE(testCtx)
+			detected, err := openjdk.Detect()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(detected).To(BeTrue(), "OpenJDK should be detected with JBP_CONFIG_OPEN_JDK_JRE alone")
+		})
+
+		It("uses JBP_CONFIG_SAP_MACHINE_JRE for SapMachine detection", func() {
+			os.Setenv("JBP_CONFIG_SAP_MACHINE_JRE", "{jre: {version: 17.+}}")
+			os.Setenv("JBP_CONFIG_OPEN_JDK_JRE", "{jre: {version: 17.+}}")
+			defer os.Unsetenv("JBP_CONFIG_SAP_MACHINE_JRE")
+			defer os.Unsetenv("JBP_CONFIG_OPEN_JDK_JRE")
+
+			sapmachine := jres.NewSapMachineJRE(testCtx)
+			detected, err := sapmachine.Detect()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(detected).To(BeTrue(), "SapMachine should be detected via JBP_CONFIG_SAP_MACHINE_JRE")
+
+			openjdk := jres.NewOpenJDKJRE(testCtx)
+			detected, err = openjdk.Detect()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(detected).To(BeTrue(), "OpenJDK should also be detected via JBP_CONFIG_OPEN_JDK_JRE")
 		})
 	})
 })
