@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/cloudfoundry/java-buildpack/src/java/common"
@@ -12,6 +13,17 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
+
+func projectRoot() string {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("cannot get caller information")
+	}
+
+	// filename = /abs/path/to/project/internal/foo/foo_test.go
+	// adjust ".." count to reach root
+	return filepath.Clean(filepath.Join(filepath.Dir(filename), "../../.."))
+}
 
 var _ = Describe("JRE Registry", func() {
 	var (
@@ -153,72 +165,12 @@ var _ = Describe("JRE Helper Functions", func() {
 		versionFile := manifestDir + "/VERSION"
 		Expect(os.WriteFile(versionFile, []byte("1.0.0"), 0644)).To(Succeed())
 
+		path := filepath.Join(projectRoot(), "manifest.yml")
+		content, err := os.ReadFile(path)
+		Expect(err).NotTo(HaveOccurred())
+		manifestContent := string(content)
+
 		manifestFile := manifestDir + "/manifest.yml"
-		manifestContent := `---
-language: java
-default_versions:
-- name: openjdk
-  version: 17.x
-- name: sapmachine
-  version: 21.x
-- name: zulu
-  version: 11.x
-dependencies:
-- name: openjdk
-  version: 8.0.422
-  uri: https://example.com/openjdk-8.tar.gz
-  sha256: 0000000000000000000000000000000000000000000000000000000000000000
-  cf_stacks:
-  - cflinuxfs4
-- name: openjdk
-  version: 11.0.25
-  uri: https://example.com/openjdk-11.tar.gz
-  sha256: 1111111111111111111111111111111111111111111111111111111111111111
-  cf_stacks:
-  - cflinuxfs4
-- name: openjdk
-  version: 17.0.13
-  uri: https://example.com/openjdk-17.tar.gz
-  sha256: 2222222222222222222222222222222222222222222222222222222222222222
-  cf_stacks:
-  - cflinuxfs4
-- name: openjdk
-  version: 21.0.5
-  uri: https://example.com/openjdk-21.tar.gz
-  sha256: 3333333333333333333333333333333333333333333333333333333333333333
-  cf_stacks:
-  - cflinuxfs4
-- name: sapmachine
-  version: 17.0.17
-  uri: https://github.com/SAP/SapMachine/releases/download/sapmachine-17.0.17/sapmachine-jre-17.0.17_linux-x64_bin.tar.gz
-  sha256: c45d572629c722b18a6254f7503a397dbfe474223afb3ac96ef462d27074f7a0
-  cf_stacks:
-  - cflinuxfs4
-- name: sapmachine
-  version: 21.0.9
-  uri: https://github.com/SAP/SapMachine/releases/download/sapmachine-21.0.9/sapmachine-jre-21.0.9_linux-x64_bin.tar.gz
-  sha256: 4cc6b1501a2fe8ae0f106342b3c00eec00b7886ce9215760b611cc9975bd339b
-  cf_stacks:
-  - cflinuxfs4
-- name: sapmachine
-  version: 25.0.1
-  uri: https://github.com/SAP/SapMachine/releases/download/sapmachine-25.0.1/sapmachine-jre-25.0.1_linux-x64_bin.tar.gz
-  sha256: 6bc007201b97214a3883e2da92dc80b2e5ae29378a7a77ab4077d74ccbfdfdbd
-  cf_stacks:
-  - cflinuxfs4
-- name: zulu
-  version: 11.0.25
-  uri: https://cdn.azul.com/zulu/bin/zulu11.76.21-ca-jre11.0.25-linux_x64.tar.gz
-  sha256: 2696d23e20a7e6cc22d36a27c3d917b6b390d0e6ac1819e791d99a1fc159317c
-  cf_stacks:
-  - cflinuxfs4
-- name: zulu
-  version: 17.0.13
-  uri: https://cdn.azul.com/zulu/bin/zulu17.54.21-ca-jre17.0.13-linux_x64.tar.gz
-  sha256: 2d74f026d0d184075ad99de343c6a24bd702eb25d87ce6de5e3ab8df1cd3ef25
-  cf_stacks:
-  - cflinuxfs4
-`
 		Expect(os.WriteFile(manifestFile, []byte(manifestContent), 0644)).To(Succeed())
 
 		manifest, err := libbuildpack.NewManifest(manifestDir, logger, time.Now())
@@ -279,7 +231,7 @@ dependencies:
 				dep, err := jres.GetJREVersion(ctx, "openjdk")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dep.Name).To(Equal("openjdk"))
-				Expect(dep.Version).To(Equal("8.0.422"))
+				Expect(dep.Version).To(Equal("8.0.452"))
 			})
 
 			It("resolves major version 11", func() {
@@ -287,7 +239,7 @@ dependencies:
 				dep, err := jres.GetJREVersion(ctx, "openjdk")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dep.Name).To(Equal("openjdk"))
-				Expect(dep.Version).To(Equal("11.0.25"))
+				Expect(dep.Version).To(Equal("11.0.27"))
 			})
 
 			It("resolves major version 17", func() {
@@ -295,7 +247,7 @@ dependencies:
 				dep, err := jres.GetJREVersion(ctx, "openjdk")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dep.Name).To(Equal("openjdk"))
-				Expect(dep.Version).To(Equal("17.0.13"))
+				Expect(dep.Version).To(Equal("17.0.15"))
 			})
 
 			It("resolves major version 21", func() {
@@ -303,7 +255,7 @@ dependencies:
 				dep, err := jres.GetJREVersion(ctx, "openjdk")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dep.Name).To(Equal("openjdk"))
-				Expect(dep.Version).To(Equal("21.0.5"))
+				Expect(dep.Version).To(Equal("21.0.7"))
 			})
 
 			It("handles version patterns with wildcards", func() {
@@ -311,7 +263,7 @@ dependencies:
 				dep, err := jres.GetJREVersion(ctx, "openjdk")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dep.Name).To(Equal("openjdk"))
-				Expect(dep.Version).To(Equal("17.0.13"))
+				Expect(dep.Version).To(Equal("17.0.15"))
 			})
 		})
 
@@ -334,7 +286,7 @@ dependencies:
 				dep, err := jres.GetJREVersion(ctx, "openjdk")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dep.Name).To(Equal("openjdk"))
-				Expect(dep.Version).To(Equal("11.0.25"))
+				Expect(dep.Version).To(Equal("11.0.27"))
 			})
 
 			It("fails when requested version does not exist", func() {
@@ -362,7 +314,7 @@ dependencies:
 				dep, err := jres.GetJREVersion(ctx, "openjdk")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dep.Name).To(Equal("openjdk"))
-				Expect(dep.Version).To(Equal("21.0.5"))
+				Expect(dep.Version).To(Equal("21.0.7"))
 			})
 
 			It("resolves version 17.+ pattern", func() {
@@ -370,7 +322,7 @@ dependencies:
 				dep, err := jres.GetJREVersion(ctx, "openjdk")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dep.Name).To(Equal("openjdk"))
-				Expect(dep.Version).To(Equal("17.0.13"))
+				Expect(dep.Version).To(Equal("17.0.15"))
 			})
 
 			It("resolves version 11.+ pattern", func() {
@@ -378,7 +330,7 @@ dependencies:
 				dep, err := jres.GetJREVersion(ctx, "openjdk")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dep.Name).To(Equal("openjdk"))
-				Expect(dep.Version).To(Equal("11.0.25"))
+				Expect(dep.Version).To(Equal("11.0.27"))
 			})
 
 			It("fails when requested version does not exist", func() {
@@ -392,7 +344,7 @@ dependencies:
 				os.Setenv("JBP_CONFIG_OPEN_JDK_JRE", "{jre: {version: 21.+}}")
 				dep, err := jres.GetJREVersion(ctx, "openjdk")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(dep.Version).To(Equal("21.0.5"))
+				Expect(dep.Version).To(Equal("21.0.7"))
 			})
 		})
 
