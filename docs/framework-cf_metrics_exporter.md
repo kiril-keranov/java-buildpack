@@ -4,7 +4,7 @@ This framework integrates the [cf-metrics-exporter](https://github.com/rabobank/
 
 ## Enabling the Exporter
 
-Set the following environment variable to enable the agent:
+Set the following environment variable in the cloud foundry env to enable the agent (via manifest.yml or `cf set-env`):
 
 ```
 CF_METRICS_EXPORTER_ENABLED=true
@@ -13,7 +13,7 @@ CF_METRICS_EXPORTER_ENABLED=true
 ## Configuration
 
 - **CF_METRICS_EXPORTER_ENABLED**: Set to `true` to enable the agent (default: disabled).
-- **CF_METRICS_EXPORTER_PROPS**: (Optional) Properties string to pass to the agent, e.g. `port=9090,foo=bar`.
+- **CF_METRICS_EXPORTER_PROPS**: (Optional) Properties string to pass to the agent, e.g. `enableLogEmitter,rpsType=tomcat-bean`.
 
 ## How it Works
 
@@ -25,7 +25,7 @@ CF_METRICS_EXPORTER_ENABLED=true
 
 ```
 CF_METRICS_EXPORTER_ENABLED=true
-CF_METRICS_EXPORTER_PROPS="port=9090,foo=bar"
+CF_METRICS_EXPORTER_PROPS="enableLogEmitter,rpsType=tomcat-bean"
 ```
 
 ## Version
@@ -36,5 +36,5 @@ CF_METRICS_EXPORTER_PROPS="port=9090,foo=bar"
 ## Notes
 
 - The agent is injected with priority 43 in JAVA_OPTS (after other APM agents).
-- The agent JAR is placed in `.java-buildpack/cf_metrics_exporter/` within the dependency directory.
+
 
