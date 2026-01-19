@@ -156,6 +156,10 @@ language: java
 default_versions:
 - name: openjdk
   version: 17.x
+- name: sapmachine
+  version: 21.x
+- name: zulu
+  version: 11.x
 dependencies:
 - name: openjdk
   version: 8.0.422
@@ -179,6 +183,30 @@ dependencies:
   version: 21.0.5
   uri: https://example.com/openjdk-21.tar.gz
   sha256: 3333333333333333333333333333333333333333333333333333333333333333
+  cf_stacks:
+  - cflinuxfs4
+- name: sapmachine
+  version: 17.0.17
+  uri: https://github.com/SAP/SapMachine/releases/download/sapmachine-17.0.17/sapmachine-jre-17.0.17_linux-x64_bin.tar.gz
+  sha256: c45d572629c722b18a6254f7503a397dbfe474223afb3ac96ef462d27074f7a0
+  cf_stacks:
+  - cflinuxfs4
+- name: sapmachine
+  version: 21.0.9
+  uri: https://github.com/SAP/SapMachine/releases/download/sapmachine-21.0.9/sapmachine-jre-21.0.9_linux-x64_bin.tar.gz
+  sha256: 4cc6b1501a2fe8ae0f106342b3c00eec00b7886ce9215760b611cc9975bd339b
+  cf_stacks:
+  - cflinuxfs4
+- name: zulu
+  version: 11.0.25
+  uri: https://cdn.azul.com/zulu/bin/zulu11.76.21-ca-jre11.0.25-linux_x64.tar.gz
+  sha256: 2696d23e20a7e6cc22d36a27c3d917b6b390d0e6ac1819e791d99a1fc159317c
+  cf_stacks:
+  - cflinuxfs4
+- name: zulu
+  version: 17.0.13
+  uri: https://cdn.azul.com/zulu/bin/zulu17.54.21-ca-jre17.0.13-linux_x64.tar.gz
+  sha256: 2d74f026d0d184075ad99de343c6a24bd702eb25d87ce6de5e3ab8df1cd3ef25
   cf_stacks:
   - cflinuxfs4
 `
@@ -346,26 +374,34 @@ dependencies:
 
 		Context("documented environment variables for all JREs", func() {
 			It("should resolve JBP_CONFIG_SAP_MACHINE_JRE for SAPMachine", func() {
-				os.Setenv("JBP_CONFIG_SAP_MACHINE_JRE", "{jre: {version: 17.+}}")
+				os.Setenv("JBP_CONFIG_SAP_MACHINE_JRE", "{ jre: {version: 17.+} }")
+				os.Setenv("JBP_CONFIG_COMPONENTS", "{ jres: [\"JavaBuildpack::Jre::SapMachineJRE\"] }")
 				defer os.Unsetenv("JBP_CONFIG_SAP_MACHINE_JRE")
+				defer os.Unsetenv("JBP_CONFIG_COMPONENTS")
 
-				_, err := jres.GetJREVersion(ctx, "sapmachine")
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("no versions of sapmachine found"))
+				dep, err := jres.GetJREVersion(ctx, "sapmachine")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dep.Name).To(Equal("sapmachine"))
+				Expect(dep.Version).To(Equal("17.0.17"))
 			})
 
 			It("should resolve JBP_CONFIG_ZULU_JRE for Zulu", func() {
 				os.Setenv("JBP_CONFIG_ZULU_JRE", "{jre: {version: 17.+}}")
+				os.Setenv("JBP_CONFIG_COMPONENTS", "{ jres: [\"JavaBuildpack::Jre::ZuluJRE\"] }")
 				defer os.Unsetenv("JBP_CONFIG_ZULU_JRE")
+				defer os.Unsetenv("JBP_CONFIG_COMPONENTS")
 
-				_, err := jres.GetJREVersion(ctx, "zulu")
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("no versions of zulu found"))
+				dep, err := jres.GetJREVersion(ctx, "zulu")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dep.Name).To(Equal("zulu"))
+				Expect(dep.Version).To(Equal("17.0.13"))
 			})
 
 			It("should resolve JBP_CONFIG_GRAAL_VM_JRE for GraalVM", func() {
-				os.Setenv("JBP_CONFIG_GRAAL_VM_JRE", "{jre: {version: 17.+}}")
+				os.Setenv("JBP_CONFIG_GRAAL_VM_JRE", "{jre: {version: 22.1.+}}")
+				os.Setenv("JBP_CONFIG_COMPONENTS", "{ jres: [\"JavaBuildpack::Jre::GraalVmJRE\"] }")
 				defer os.Unsetenv("JBP_CONFIG_GRAAL_VM_JRE")
+				defer os.Unsetenv("JBP_CONFIG_COMPONENTS")
 
 				_, err := jres.GetJREVersion(ctx, "graalvm")
 				Expect(err).To(HaveOccurred())
@@ -373,8 +409,10 @@ dependencies:
 			})
 
 			It("should resolve JBP_CONFIG_IBM_JRE for IBM", func() {
-				os.Setenv("JBP_CONFIG_IBM_JRE", "{jre: {version: 17.+}}")
+				os.Setenv("JBP_CONFIG_IBM_JRE", "{jre: {version: 1.8.+}}")
+				os.Setenv("JBP_CONFIG_COMPONENTS", "{ jres: [\"JavaBuildpack::Jre::IbmJRE\"] }")
 				defer os.Unsetenv("JBP_CONFIG_IBM_JRE")
+				defer os.Unsetenv("JBP_CONFIG_COMPONENTS")
 
 				_, err := jres.GetJREVersion(ctx, "ibm")
 				Expect(err).To(HaveOccurred())
@@ -383,7 +421,9 @@ dependencies:
 
 			It("should resolve JBP_CONFIG_ORACLE_JRE for Oracle", func() {
 				os.Setenv("JBP_CONFIG_ORACLE_JRE", "{jre: {version: 17.+}}")
+				os.Setenv("JBP_CONFIG_COMPONENTS", "{ jres: [\"JavaBuildpack::Jre::OracleJRE\"] }")
 				defer os.Unsetenv("JBP_CONFIG_ORACLE_JRE")
+				defer os.Unsetenv("JBP_CONFIG_COMPONENTS")
 
 				_, err := jres.GetJREVersion(ctx, "oracle")
 				Expect(err).To(HaveOccurred())
@@ -392,7 +432,9 @@ dependencies:
 
 			It("should resolve JBP_CONFIG_ZING_JRE for Zing", func() {
 				os.Setenv("JBP_CONFIG_ZING_JRE", "{jre: {version: 17.+}}")
+				os.Setenv("JBP_CONFIG_COMPONENTS", "{ jres: [\"JavaBuildpack::Jre::ZingJRE\"] }")
 				defer os.Unsetenv("JBP_CONFIG_ZING_JRE")
+				defer os.Unsetenv("JBP_CONFIG_COMPONENTS")
 
 				_, err := jres.GetJREVersion(ctx, "zing")
 				Expect(err).To(HaveOccurred())
