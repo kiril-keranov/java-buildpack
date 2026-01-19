@@ -120,6 +120,19 @@ func (r *Registry) RegisterStandardJREs() {
 func (r *Registry) Detect() (JRE, string, error) {
 	var detectionErrors []error
 
+	// Check for deprecated JBP_CONFIG_COMPONENTS usage
+	if componentsEnv := os.Getenv("JBP_CONFIG_COMPONENTS"); componentsEnv != "" {
+		r.ctx.Log.Warning("JBP_CONFIG_COMPONENTS is deprecated for JRE selection and will be ignored")
+		r.ctx.Log.Warning("Use JRE-specific environment variables instead:")
+		r.ctx.Log.Warning("  - JBP_CONFIG_OPEN_JDK_JRE for OpenJDK")
+		r.ctx.Log.Warning("  - JBP_CONFIG_SAP_MACHINE_JRE for SapMachine")
+		r.ctx.Log.Warning("  - JBP_CONFIG_ZULU_JRE for Zulu")
+		r.ctx.Log.Warning("  - JBP_CONFIG_GRAAL_VM_JRE for GraalVM")
+		r.ctx.Log.Warning("  - JBP_CONFIG_IBM_JRE for IBM Semeru")
+		r.ctx.Log.Warning("  - JBP_CONFIG_ORACLE_JRE for Oracle")
+		r.ctx.Log.Warning("  - JBP_CONFIG_ZING_JRE for Azul Platform Prime")
+	}
+
 	// Check if any JRE is explicitly configured
 	for _, jre := range r.providers {
 		detected, err := jre.Detect()
@@ -178,10 +191,25 @@ type BaseComponent struct {
 // Helper functions
 
 // DetectJREByEnv checks environment variables for JRE selection
-// Supports JBP_CONFIG_OPEN_JDK_JRE, etc.
+// Takes the internal JRE name (e.g., "sapmachine", "openjdk", "zulu")
+// Checks both auto-generated and documented environment variable names
+// This matches the behavior of GetJREVersion and the Ruby buildpack
 func DetectJREByEnv(jreName string) bool {
+	// Check auto-generated name pattern (e.g., JBP_CONFIG_SAPMACHINE)
 	envKey := fmt.Sprintf("JBP_CONFIG_%s", strings.ToUpper(strings.ReplaceAll(jreName, "-", "_")))
-	return os.Getenv(envKey) != ""
+	if os.Getenv(envKey) != "" {
+		return true
+	}
+
+	// Check documented environment variable name from map
+	// This ensures backward compatibility with documented JBP_CONFIG_*_JRE convention
+	if documentedEnvKey, exists := jreNameToDocumentedEnvVar[jreName]; exists {
+		if os.Getenv(documentedEnvKey) != "" {
+			return true
+		}
+	}
+
+	return false
 }
 
 // jreNameToDocumentedEnvVar maps JRE names to their documented environment variable names
