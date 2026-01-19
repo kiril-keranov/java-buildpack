@@ -5,7 +5,7 @@ The IBM Semeru JRE provides Java runtimes built on Eclipse OpenJ9 from IBM. This
 <table>
   <tr>
     <td><strong>Detection Criterion</strong></td>
-    <td>Configured via <code>JBP_CONFIG_COMPONENTS</code> environment variable.
+    <td>Configured via <code>JBP_CONFIG_IBM_JRE</code> environment variable.
       <ul>
         <li>Existence of a Volume Service is defined as the <a href="http://docs.cloudfoundry.org/devguide/deploy-apps/environment-variable.html#VCAP-SERVICES"><code>VCAP_SERVICES</code></a> payload containing a service whose name, label or tag has <code>heap-dump</code> as a substring.</li>
       </ul>
@@ -98,10 +98,7 @@ After adding IBM Semeru to your buildpack's manifest, configure your application
 cf push my-app -b my-custom-java-buildpack
 
 # Select IBM Semeru JRE
-cf set-env my-app JBP_CONFIG_COMPONENTS '{"jres": ["IBMJRE"]}'
-
-# Optionally specify version
-cf set-env my-app BP_JAVA_VERSION 17
+cf set-env my-app JBP_CONFIG_IBM_JRE '{jre: {version: 17.+}}'
 
 # Restage to apply
 cf restage my-app
@@ -115,16 +112,14 @@ applications:
     buildpacks:
       - my-custom-java-buildpack
     env:
-      JBP_CONFIG_COMPONENTS: '{"jres": ["IBMJRE"]}'
-      BP_JAVA_VERSION: 17
+      JBP_CONFIG_IBM_JRE: '{jre: {version: 17.+}}'
 ```
 
 ## Configuration Options
 
 | Name | Description |
 | ---- | ----------- |
-| `BP_JAVA_VERSION` | The major Java version to use (e.g., `11`, `17`, `21`). The buildpack selects the highest matching version from the manifest. |
-| `JBP_CONFIG_COMPONENTS` | Must include `IBMJRE` in the jres array to select IBM Semeru. |
+| `JBP_CONFIG_IBM_JRE` | Configuration for IBM Semeru JRE, including version selection (e.g., `'{jre: {version: 17.+}}'`). |
 
 ### TLS Options
 

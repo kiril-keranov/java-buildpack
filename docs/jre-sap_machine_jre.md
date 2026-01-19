@@ -22,10 +22,10 @@ For general information on configuring the buildpack, including how to specify c
 
 The JRE can be configured by modifying the [`config/sap_machine_jre.yml`][] file in the buildpack fork.  The JRE uses the [`Repository` utility support][repositories] and so it supports the [version syntax][]  defined there.
 
-To use SapMachine JRE instead of OpenJDK without forking java-buildpack, set environment variable and restage:
+To use SapMachine JRE instead of OpenJDK, set environment variable and restage:
 
 ```bash
-cf set-env <app_name> JBP_CONFIG_COMPONENTS '{jres: ["JavaBuildpack::Jre::SapMachineJRE"]}'
+cf set-env <app_name> JBP_CONFIG_SAP_MACHINE_JRE '{jre: {version: 17.+}}'
 cf restage <app_name>
 ```
 

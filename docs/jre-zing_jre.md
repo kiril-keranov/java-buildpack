@@ -5,7 +5,7 @@ Azul Platform Prime (formerly Zing) provides high-performance Java runtimes from
 <table>
   <tr>
     <td><strong>Detection Criterion</strong></td>
-    <td>Configured via <code>JBP_CONFIG_COMPONENTS</code> environment variable.
+    <td>Configured via <code>JBP_CONFIG_ZING_JRE</code> environment variable.
       <ul>
         <li>Existence of a Volume Service service is defined as the <a href="http://docs.cloudfoundry.org/devguide/deploy-apps/environment-variable.html#VCAP-SERVICES"><code>VCAP_SERVICES</code></a> payload containing a service whose name, label or tag has <code>heap-dump</code> as a substring.</li>
       </ul>
@@ -91,10 +91,7 @@ After adding Azul Platform Prime JRE to your buildpack's manifest, configure you
 cf push my-app -b my-custom-java-buildpack
 
 # Select Azul Platform Prime JRE
-cf set-env my-app JBP_CONFIG_COMPONENTS '{"jres": ["ZingJRE"]}'
-
-# Optionally specify version
-cf set-env my-app BP_JAVA_VERSION 21
+cf set-env my-app JBP_CONFIG_ZING_JRE '{jre: {version: 21.+}}'
 
 # Restage to apply
 cf restage my-app
@@ -108,16 +105,14 @@ applications:
     buildpacks:
       - my-custom-java-buildpack
     env:
-      JBP_CONFIG_COMPONENTS: '{"jres": ["ZingJRE"]}'
-      BP_JAVA_VERSION: 21
+      JBP_CONFIG_ZING_JRE: '{jre: {version: 21.+}}'
 ```
 
 ## Configuration Options
 
 | Name | Description |
 | ---- | ----------- |
-| `BP_JAVA_VERSION` | The major Java version to use (e.g., `17`, `21`). The buildpack selects the highest matching version from the manifest. |
-| `JBP_CONFIG_COMPONENTS` | Must include `ZingJRE` in the jres array to select Azul Platform Prime JRE. |
+| `JBP_CONFIG_ZING_JRE` | Configuration for Azul Platform Prime JRE, including version selection (e.g., `'{jre: {version: 21.+}}'`). |
 
 ### Memory Configuration
 

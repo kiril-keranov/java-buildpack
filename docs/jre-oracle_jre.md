@@ -5,7 +5,7 @@ The Oracle JRE provides Java runtimes from [Oracle][]. No versions of the JRE ar
 <table>
   <tr>
     <td><strong>Detection Criterion</strong></td>
-    <td>Configured via <code>JBP_CONFIG_COMPONENTS</code> environment variable.
+    <td>Configured via <code>JBP_CONFIG_ORACLE_JRE</code> environment variable.
       <ul>
         <li>Existence of a Volume Service service is defined as the <a href="http://docs.cloudfoundry.org/devguide/deploy-apps/environment-variable.html#VCAP-SERVICES"><code>VCAP_SERVICES</code></a> payload containing a service whose name, label or tag has <code>heap-dump</code> as a substring.</li>
       </ul>
@@ -89,10 +89,7 @@ After adding Oracle JRE to your buildpack's manifest, configure your application
 cf push my-app -b my-custom-java-buildpack
 
 # Select Oracle JRE
-cf set-env my-app JBP_CONFIG_COMPONENTS '{"jres": ["OracleJRE"]}'
-
-# Optionally specify version
-cf set-env my-app BP_JAVA_VERSION 17
+cf set-env my-app JBP_CONFIG_ORACLE_JRE '{jre: {version: 17.+}}'
 
 # Restage to apply
 cf restage my-app
@@ -106,16 +103,14 @@ applications:
     buildpacks:
       - my-custom-java-buildpack
     env:
-      JBP_CONFIG_COMPONENTS: '{"jres": ["OracleJRE"]}'
-      BP_JAVA_VERSION: 17
+      JBP_CONFIG_ORACLE_JRE: '{jre: {version: 17.+}}'
 ```
 
 ## Configuration Options
 
 | Name | Description |
 | ---- | ----------- |
-| `BP_JAVA_VERSION` | The major Java version to use (e.g., `17`, `21`). The buildpack selects the highest matching version from the manifest. |
-| `JBP_CONFIG_COMPONENTS` | Must include `OracleJRE` in the jres array to select Oracle JRE. |
+| `JBP_CONFIG_ORACLE_JRE` | Configuration for Oracle JRE, including version selection (e.g., `'{jre: {version: 17.+}}'`). |
 
 ### Memory Configuration
 
