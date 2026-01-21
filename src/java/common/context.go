@@ -106,14 +106,26 @@ type VCAPService struct {
 	Credentials map[string]interface{} `json:"credentials"`
 }
 
-// GetVCAPServices parses the VCAP_SERVICES environment variable
-// Returns an empty VCAPServices map if VCAP_SERVICES is not set
+// GetVCAPServices parses the VCAP_SERVICES or VCAP_SERVICES_FILE_PATH environment variable
+// Returns an empty VCAPServices map if VCAP_SERVICES or VCAP_SERVICES_FILE_PATH is not set
 func GetVCAPServices() (VCAPServices, error) {
-	vcapServicesStr := os.Getenv("VCAP_SERVICES")
-	if vcapServicesStr == "" {
-		return VCAPServices{}, nil
+	if vcapServicesStr, ok := os.LookupEnv("VCAP_SERVICES"); ok && vcapServicesStr != "" {
+		return loadVcapServices(vcapServicesStr)
 	}
 
+	if vcapServicesFileName, ok := os.LookupEnv("VCAP_SERVICES_FILE_PATH"); ok && vcapServicesFileName != "" {
+		vcapServicesContent, err := os.ReadFile(vcapServicesFileName)
+		if err != nil {
+			return VCAPServices{}, err
+		}
+		return loadVcapServices(string(vcapServicesContent))
+	}
+
+	return VCAPServices{}, nil
+}
+
+// loadVcapServices loads services json content into VCAPServices map
+func loadVcapServices(vcapServicesStr string) (VCAPServices, error) {
 	var services VCAPServices
 	if err := json.Unmarshal([]byte(vcapServicesStr), &services); err != nil {
 		return nil, err
