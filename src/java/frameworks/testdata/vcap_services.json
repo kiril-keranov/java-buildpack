@@ -1,0 +1,10 @@
+{
+  "newrelic": [{
+    "name": "newrelic-service",
+    "label": "newrelic",
+    "tags": ["apm", "monitoring"],
+    "credentials": {
+      "licenseKey": "test-key-123"
+    }
+  }]
+}

@@ -93,10 +93,23 @@ var _ = Describe("VCAP Services", func() {
 		AfterEach(func() {
 			os.Unsetenv("VCAP_SERVICES")
 		})
+		AfterEach(func() {
+			os.Unsetenv("VCAP_SERVICES_FILE_PATH")
+		})
 
 		Context("with empty VCAP_SERVICES", func() {
 			It("returns empty services map", func() {
 				os.Setenv("VCAP_SERVICES", "")
+
+				services, err := frameworks.GetVCAPServices()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(services).To(HaveLen(0))
+			})
+		})
+
+		Context("with empty VCAP_SERVICES_FILE_PATH", func() {
+			It("returns empty services map", func() {
+				os.Setenv("VCAP_SERVICES_FILE_PATH", "")
 
 				services, err := frameworks.GetVCAPServices()
 				Expect(err).NotTo(HaveOccurred())
@@ -118,6 +131,24 @@ var _ = Describe("VCAP Services", func() {
 				}`
 
 				os.Setenv("VCAP_SERVICES", vcapJSON)
+
+				services, err := frameworks.GetVCAPServices()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(services.HasService("newrelic")).To(BeTrue())
+
+				service := services.GetService("newrelic")
+				Expect(service).NotTo(BeNil())
+				Expect(service.Name).To(Equal("newrelic-service"))
+
+				licenseKey, ok := service.Credentials["licenseKey"].(string)
+				Expect(ok).To(BeTrue())
+				Expect(licenseKey).To(Equal("test-key-123"))
+			})
+		})
+
+		Context("with valid VCAP_SERVICES_FILE_PATH JSON", func() {
+			It("parses services correctly", func() {
+				os.Setenv("VCAP_SERVICES_FILE_PATH", "testdata/vcap_services.json")
 
 				services, err := frameworks.GetVCAPServices()
 				Expect(err).NotTo(HaveOccurred())
