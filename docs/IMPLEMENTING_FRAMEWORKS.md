@@ -105,11 +105,11 @@ err := ctx.Installer.InstallDependency(dep, targetDir)
 
 ### Type 1: Service-Bound Frameworks
 
-Detect when a specific Cloud Foundry service is bound via `VCAP_SERVICES`.
+Detect when a specific Cloud Foundry service is bound via `VCAP_SERVICES` or `VCAP_SERVICES_FILE_PATH`.
 
 **Examples:** New Relic, AppDynamics, Seeker Security Provider
 
-**Detection:** Looks for service name/label/tags in `VCAP_SERVICES`
+**Detection:** Looks for service name/label/tags in `VCAP_SERVICES` or `VCAP_SERVICES_FILE_PATH`.
 
 ### Type 2: Configuration-Based Frameworks
 
