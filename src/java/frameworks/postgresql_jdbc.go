@@ -103,6 +103,8 @@ func (p *PostgresqlJdbcFramework) hasPostgresService() bool {
 		vcapServices.HasTag("postgres") ||
 		vcapServices.HasServiceByNamePattern("postgres")
 
+	fmt.Printf("vcapServices: %v", vcapServices)
+
 	fmt.Printf("Check hasPostgres %v", hasPostgres)
 	if !hasPostgres {
 		return false
