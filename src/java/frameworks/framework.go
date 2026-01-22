@@ -108,9 +108,11 @@ func (r *Registry) RegisterStandardFrameworks() {
 func (r *Registry) DetectAll() ([]Framework, []string, error) {
 	var matched []Framework
 	var names []string
-
+	r.context.Log.Info("Testing DetectAll")
 	for _, framework := range r.frameworks {
+		r.context.Log.Info("Checking framework: %v", framework)
 		if name, err := framework.Detect(); err == nil && name != "" {
+			r.context.Log.Info("Detect() passed and name: %v", name)
 			matched = append(matched, framework)
 			names = append(names, name)
 		}
