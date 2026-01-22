@@ -162,6 +162,6 @@ func (s *Supplier) installFrameworks() error {
 			return fmt.Errorf("failed to install framework %s: %w", frameworkNames[i], err)
 		}
 	}
-
+	s.Log.Info("Test after frameworks detected")
 	return nil
 }
