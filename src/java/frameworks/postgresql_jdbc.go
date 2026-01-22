@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 
@@ -92,13 +92,14 @@ func (p *PostgresqlJdbcFramework) hasPostgresService() bool {
 	if err != nil {
 		return false
 	}
-
+	p.context.Log.Debug("After GetVCAPServices")
 	// Use helper methods to check for PostgreSQL service
 	// This checks service labels, tags, and service names
 	hasPostgres := vcapServices.HasService("postgres") ||
 		vcapServices.HasTag("postgres") ||
 		vcapServices.HasServiceByNamePattern("postgres")
 
+	p.context.Log.Debug("Check hasPostgres %v", hasPostgres)
 	if !hasPostgres {
 		return false
 	}
@@ -125,6 +126,8 @@ func (p *PostgresqlJdbcFramework) hasPostgresService() bool {
 			}
 		}
 	}
+
+	p.context.Log.Debug("After name,label,match check")
 
 	return false
 }
