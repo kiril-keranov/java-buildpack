@@ -95,7 +95,7 @@ func (p *PostgresqlJdbcFramework) hasPostgresService() bool {
 		return false
 	}
 	fmt.Print("After GetVCAPServices")
-	return true
+
 	p.context.Log.Debug("After GetVCAPServices")
 	// Use helper methods to check for PostgreSQL service
 	// This checks service labels, tags, and service names
@@ -103,7 +103,7 @@ func (p *PostgresqlJdbcFramework) hasPostgresService() bool {
 		vcapServices.HasTag("postgres") ||
 		vcapServices.HasServiceByNamePattern("postgres")
 
-	p.context.Log.Debug("Check hasPostgres %v", hasPostgres)
+	fmt.Printf("Check hasPostgres %v", hasPostgres)
 	if !hasPostgres {
 		return false
 	}
@@ -131,7 +131,7 @@ func (p *PostgresqlJdbcFramework) hasPostgresService() bool {
 		}
 	}
 
-	p.context.Log.Debug("After name,label,match check")
+	fmt.Printf("After name,label,match check")
 
 	return false
 }
