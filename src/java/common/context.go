@@ -173,6 +173,7 @@ func (v VCAPServices) GetServiceByNamePattern(pattern string) *VCAPService {
 	for k, v := range v {
 		fmt.Printf("key: %v", k)
 		for _, service := range v {
+			fmt.Printf("service name: %v", service.Name)
 			if strings.Contains(strings.ToLower(service.Name), patternLower) {
 				return &service
 			}
