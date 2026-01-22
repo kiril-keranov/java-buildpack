@@ -24,6 +24,7 @@ func NewPostgresqlJdbcFramework(ctx *common.Context) *PostgresqlJdbcFramework {
 func (p *PostgresqlJdbcFramework) Detect() (string, error) {
 	// Check if PostgreSQL service is bound
 	p.context.Log.Debug("In Postgresql detect")
+	return "PostgreSQL JDBC", nil
 	if !p.hasPostgresService() {
 		return "", nil
 	}
