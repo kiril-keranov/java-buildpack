@@ -36,7 +36,8 @@ func NewRegistry(ctx *common.Context) *Registry {
 }
 
 // Register adds a framework to the registry
-func (r *Registry) Register(f Framework) {
+func (r *Registry) Register(f Framework, name string) {
+	r.context.Log.Info("Registering %v", name)
 	r.frameworks = append(r.frameworks, f)
 }
 
@@ -45,63 +46,63 @@ func (r *Registry) Register(f Framework) {
 // IMPORTANT: The order matters! Frameworks are checked in registration order.
 func (r *Registry) RegisterStandardFrameworks() {
 	// APM Agents (Priority 1)
-	r.Register(NewNewRelicFramework(r.context))
-	r.Register(NewAppDynamicsFramework(r.context))
-	r.Register(NewDatadogJavaagentFramework(r.context))
-	r.Register(NewElasticApmAgentFramework(r.context))
+	r.Register(NewNewRelicFramework(r.context), "newrelic fr")
+	r.Register(NewAppDynamicsFramework(r.context), "appdynamic fr")
+	r.Register(NewDatadogJavaagentFramework(r.context), "datadog fr")
+	r.Register(NewElasticApmAgentFramework(r.context), "elasticapm fr")
 
 	// Spring Service Bindings (Priority 1)
-	r.Register(NewSpringAutoReconfigurationFramework(r.context))
-	r.Register(NewJavaCfEnvFramework(r.context))
+	r.Register(NewSpringAutoReconfigurationFramework(r.context), "new spring fr")
+	r.Register(NewJavaCfEnvFramework(r.context), "new java cf env fr")
 
 	// JDBC Drivers (Priority 1)
-	r.Register(NewPostgresqlJdbcFramework(r.context))
-	r.Register(NewMariaDBJDBCFramework(r.context))
+	r.Register(NewPostgresqlJdbcFramework(r.context), "postgresqlframework")
+	r.Register(NewMariaDBJDBCFramework(r.context), "mariajdbc fr")
 
 	// mTLS Support (Priority 1)
-	r.Register(NewClientCertificateMapperFramework(r.context))
+	r.Register(NewClientCertificateMapperFramework(r.context), "client cert mapper fr")
 
 	// Security Providers (Priority 1)
-	r.Register(NewContainerSecurityProviderFramework(r.context))
-	r.Register(NewLunaSecurityProviderFramework(r.context))
-	r.Register(NewProtectAppSecurityProviderFramework(r.context))
-	r.Register(NewSeekerSecurityProviderFramework(r.context))
+	r.Register(NewContainerSecurityProviderFramework(r.context), "cps fr")
+	r.Register(NewLunaSecurityProviderFramework(r.context), "luna sec pr")
+	r.Register(NewProtectAppSecurityProviderFramework(r.context), "")
+	r.Register(NewSeekerSecurityProviderFramework(r.context), "")
 
 	// Container & Runtime Support (Priority 1)
-	r.Register(NewContainerCustomizerFramework(r.context))
-	r.Register(NewJavaMemoryAssistantFramework(r.context))
+	r.Register(NewContainerCustomizerFramework(r.context), "")
+	r.Register(NewJavaMemoryAssistantFramework(r.context), "")
 
 	// Metrics & Observability (Priority 1)
-	r.Register(NewMetricWriterFramework(r.context))
+	r.Register(NewMetricWriterFramework(r.context), "")
 
 	// Development Tools (Priority 1)
-	r.Register(NewDebugFramework(r.context))
-	r.Register(NewJmxFramework(r.context))
-	r.Register(NewJavaOptsFramework(r.context))
+	r.Register(NewDebugFramework(r.context), "")
+	r.Register(NewJmxFramework(r.context), "")
+	r.Register(NewJavaOptsFramework(r.context), "")
 
 	// APM Agents (Priority 2)
-	r.Register(NewAzureApplicationInsightsAgentFramework(r.context))
-	r.Register(NewCheckmarxIASTAgentFramework(r.context))
+	r.Register(NewAzureApplicationInsightsAgentFramework(r.context), "")
+	r.Register(NewCheckmarxIASTAgentFramework(r.context), "")
 	// NOTE: Google Stackdriver Debugger has been removed - it's deprecated by Google
 	// and shares the same binary as Profiler. Use Profiler instead.
-	r.Register(NewGoogleStackdriverProfilerFramework(r.context))
-	r.Register(NewIntroscopeAgentFramework(r.context))
-	r.Register(NewOpenTelemetryJavaagentFramework(r.context))
-	r.Register(NewRiverbedAppInternalsAgentFramework(r.context))
-	r.Register(NewSkyWalkingAgentFramework(r.context))
-	r.Register(NewSplunkOtelJavaAgentFramework(r.context))
+	r.Register(NewGoogleStackdriverProfilerFramework(r.context), "")
+	r.Register(NewIntroscopeAgentFramework(r.context), "")
+	r.Register(NewOpenTelemetryJavaagentFramework(r.context), "")
+	r.Register(NewRiverbedAppInternalsAgentFramework(r.context), "")
+	r.Register(NewSkyWalkingAgentFramework(r.context), "")
+	r.Register(NewSplunkOtelJavaAgentFramework(r.context), "")
 
 	// Testing & Code Coverage (Priority 3)
-	r.Register(NewJacocoAgentFramework(r.context))
+	r.Register(NewJacocoAgentFramework(r.context), "")
 
 	// Code Instrumentation & Additional Development Tools (Priority 3)
-	r.Register(NewJRebelAgentFramework(r.context))
-	r.Register(NewContrastSecurityAgentFramework(r.context))
-	r.Register(NewAspectJWeaverAgentFramework(r.context))
-	r.Register(NewTakipiAgentFramework(r.context))
-	r.Register(NewYourKitProfilerFramework(r.context))
-	r.Register(NewJProfilerProfilerFramework(r.context))
-	r.Register(NewSealightsAgentFramework(r.context))
+	r.Register(NewJRebelAgentFramework(r.context), "")
+	r.Register(NewContrastSecurityAgentFramework(r.context), "")
+	r.Register(NewAspectJWeaverAgentFramework(r.context), "")
+	r.Register(NewTakipiAgentFramework(r.context), "")
+	r.Register(NewYourKitProfilerFramework(r.context), "")
+	r.Register(NewJProfilerProfilerFramework(r.context), "")
+	r.Register(NewSealightsAgentFramework(r.context), "")
 }
 
 // DetectAll returns all frameworks that should be included
