@@ -24,6 +24,7 @@ func NewNewRelicFramework(ctx *common.Context) *NewRelicFramework {
 // Detect checks if New Relic should be included
 func (n *NewRelicFramework) Detect() (string, error) {
 	// Check for New Relic service binding
+	n.context.Log.Debug("In Newrelic detect")
 	vcapServices, err := GetVCAPServices()
 	if err != nil {
 		n.context.Log.Warning("Failed to parse VCAP_SERVICES: %s", err.Error())

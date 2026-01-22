@@ -29,6 +29,7 @@ func NewJavaOptsFramework(ctx *common.Context) *JavaOptsFramework {
 // Detect returns a positive result if loadConfig() finds settings (universal framework for JAVA_OPTS configuration)
 func (j *JavaOptsFramework) Detect() (string, error) {
 	// Check if there's any configuration to apply
+	j.context.Log.Debug("In Javaopts detect")
 	config, err := j.loadConfig()
 	if err != nil {
 		// if detect "fails" Finalize() is not called so log parse failures as warning
