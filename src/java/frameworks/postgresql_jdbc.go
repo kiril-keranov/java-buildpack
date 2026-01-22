@@ -27,7 +27,7 @@ func (p *PostgresqlJdbcFramework) Detect() (string, error) {
 	if !p.hasPostgresService() {
 		return "", nil
 	}
-	return "PostgreSQL JDBC", nil
+
 	p.context.Log.Debug("After hasPostgresService")
 	// Don't install if driver is already present in application
 	if p.hasPostgresDriver() {
@@ -94,6 +94,8 @@ func (p *PostgresqlJdbcFramework) hasPostgresService() bool {
 	if err != nil {
 		return false
 	}
+	fmt.Print("After GetVCAPServices")
+	return true
 	p.context.Log.Debug("After GetVCAPServices")
 	// Use helper methods to check for PostgreSQL service
 	// This checks service labels, tags, and service names
