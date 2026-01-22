@@ -23,10 +23,11 @@ func NewPostgresqlJdbcFramework(ctx *common.Context) *PostgresqlJdbcFramework {
 // Detect checks if PostgreSQL JDBC driver should be installed
 func (p *PostgresqlJdbcFramework) Detect() (string, error) {
 	// Check if PostgreSQL service is bound
+	p.context.Log.Debug("In Postgresql detect")
 	if !p.hasPostgresService() {
 		return "", nil
 	}
-
+	p.context.Log.Debug("After hasPostgresService")
 	// Don't install if driver is already present in application
 	if p.hasPostgresDriver() {
 		p.context.Log.Debug("PostgreSQL JDBC driver already present in application")
