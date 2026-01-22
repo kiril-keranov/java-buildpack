@@ -170,7 +170,8 @@ func (v VCAPServices) GetServiceByNamePattern(pattern string) *VCAPService {
 
 	// Case-insensitive substring matching
 	patternLower := strings.ToLower(pattern)
-	for _, v := range v {
+	for k, v := range v {
+		fmt.Printf("key: %v", k)
 		for _, service := range v {
 			if strings.Contains(strings.ToLower(service.Name), patternLower) {
 				return &service
