@@ -152,14 +152,14 @@ func (v VCAPServices) HasTag(tag string) bool {
 	return false
 }
 
-// HasServiceByNamePattern checks if any service in "user-provided" matches the pattern
+// HasServiceByNamePattern checks if any service matches the pattern
 // This is needed for Docker platform where services are under "user-provided" label
 // Pattern matching is case-insensitive substring matching
 func (v VCAPServices) HasServiceByNamePattern(pattern string) bool {
 	return v.GetServiceByNamePattern(pattern) != nil
 }
 
-// GetServiceByNamePattern returns the first service in "user-provided" that matches the pattern
+// GetServiceByNamePattern returns the first service that matches the pattern
 // Returns nil if no matching service is found
 // Pattern matching is case-insensitive substring matching (e.g., "newrelic" matches "my-newrelic-service")
 func (v VCAPServices) GetServiceByNamePattern(pattern string) *VCAPService {
