@@ -172,6 +172,7 @@ func (v VCAPServices) HasServiceByNamePattern(pattern string) bool {
 // Pattern matching is case-insensitive substring matching (e.g., "newrelic" matches "my-newrelic-service")
 // Searches across all service labels, not just "user-provided"
 func (v VCAPServices) GetServiceByNamePattern(pattern string) *VCAPService {
+	// Case-insensitive substring matching
 	patternLower := strings.ToLower(pattern)
 	for _, services := range v {
 		for _, service := range services {
