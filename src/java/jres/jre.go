@@ -50,15 +50,6 @@ type JRE interface {
 	MemoryCalculatorCommand() string
 }
 
-// Context holds shared dependencies for JRE providers
-type Context struct {
-	Stager    *libbuildpack.Stager
-	Manifest  *libbuildpack.Manifest
-	Installer *libbuildpack.Installer
-	Log       *libbuildpack.Logger
-	Command   *libbuildpack.Command
-}
-
 // Registry manages multiple JRE providers
 type Registry struct {
 	ctx        *common.Context

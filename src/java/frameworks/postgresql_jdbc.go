@@ -109,7 +109,6 @@ func (p *PostgresqlJdbcFramework) hasPostgresService() bool {
 		for _, service := range services {
 			// Check if service name, label, or tags contain "postgres"
 			nameMatch := strings.Contains(strings.ToLower(service.Name), "postgres")
-			labelMatch := false
 			tagMatch := false
 
 			for _, tag := range service.Tags {
