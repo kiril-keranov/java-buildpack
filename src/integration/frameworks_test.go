@@ -594,6 +594,47 @@ func testFrameworks(platform switchblade.Platform, fixtures string) func(*testin
 					Eventually(deployment).Should(matchers.Serve(ContainSubstring("")))
 				})
 			})
+
+			context("with CF Metrics Exporter enabled", func() {
+				it("detects and enables CF Metrics Exporter", func() {
+					deployment, logs, err := platform.Deploy.
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION":                "11",
+							"JBP_CONFIG_CF_METRICS_EXPORTER": "'{enabled: true}'",
+						}).
+						Execute(name, filepath.Join(fixtures, "containers", "spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					// Log should indicate exporter enabled with version
+					Expect(logs.String()).To(ContainSubstring("CF Metrics Exporter v"))
+					Expect(logs.String()).To(ContainSubstring("enabled"))
+					Expect(logs).To(ContainSubstring("-javaagent:"))
+					Eventually(deployment).Should(matchers.Serve(ContainSubstring("")))
+				})
+
+				it("includes CF_METRICS_EXPORTER_PROPS when provided", func() {
+					props := "debug,enableLogEmitter,intervalSeconds=30"
+					deployment, logs, err := platform.Deploy.
+						WithEnv(map[string]string{
+							"BP_JAVA_VERSION":                "11",
+							"JBP_CONFIG_CF_METRICS_EXPORTER": "'{enabled: true}'",
+							"CF_METRICS_EXPORTER_PROPS":      props,
+						}).
+						Execute(name, filepath.Join(fixtures, "containers", "spring_boot_staged"))
+					Expect(err).NotTo(HaveOccurred(), logs.String)
+
+					// Should still show exporter enabled
+					Expect(logs.String()).To(ContainSubstring("CF Metrics Exporter v"))
+					Expect(logs.String()).To(ContainSubstring("enabled"))
+					Expect(logs.String()).To(ContainSubstring("-javaagent:"))
+					// And include provided properties in logs/configuration output
+					Expect(logs.String()).To(Or(
+						ContainSubstring("CF_METRICS_EXPORTER_PROPS"),
+						ContainSubstring(props),
+					))
+					Eventually(deployment).Should(matchers.Serve(ContainSubstring("")))
+				})
+			})
 		})
 
 		context("Testing & Code Coverage", func() {
