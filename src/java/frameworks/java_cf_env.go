@@ -100,6 +100,7 @@ func (j *JavaCfEnvFramework) Finalize() error {
 func (j *JavaCfEnvFramework) isEnabled() bool {
 	// Check JBP_CONFIG_JAVA_CF_ENV environment variable
 	configOverride := os.Getenv("JBP_CONFIG_JAVA_CF_ENV")
+	fmt.Printf("configOverride: %v", configOverride)
 	if configOverride != "" {
 		// Parse YAML configuration
 		var yamlContent interface{}
