@@ -73,6 +73,8 @@ func (r *Registry) RegisterStandardFrameworks() {
 
 	// Metrics & Observability (Priority 1)
 	r.Register(NewMetricWriterFramework(r.context))
+	// Register cf-metrics-exporter agent (agent mode)
+	r.Register(NewCfMetricsExporterFramework(r.context))
 
 	// Development Tools (Priority 1)
 	r.Register(NewDebugFramework(r.context))

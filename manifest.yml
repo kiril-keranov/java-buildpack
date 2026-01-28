@@ -80,6 +80,8 @@ default_versions:
   version: 7.x
 - name: newrelic
   version: 8.x
+- name: cf-metrics-exporter
+  version: 0.7.x
 
 url_to_dependency_map:
 - match: openjdk-jre-(\d+\.\d+\.\d+)
@@ -541,6 +543,14 @@ dependencies:
   version: 4.0.2570
   uri: https://agents.sealights.co/sealights-java/sealights-java-4.0.2570.zip
   sha256: 0ed3e0bc83a45d5ae082fb1a2f6df47544c8c51d8dfa249b1fdb4b15c5a0ddea
+  cf_stacks:
+  - cflinuxfs4
+
+# cf-metrics-exporter Agent
+- name: cf-metrics-exporter
+  version: 0.7.1
+  uri: https://repo1.maven.org/maven2/io/github/rabobank/cf-metrics-exporter/0.7.1/cf-metrics-exporter-0.7.1.jar
+  sha256: 7ebabd3ffd812082cf92a513c8d2ac52906f5b42cd952cbe740bd5d5b086e79b
   cf_stacks:
   - cflinuxfs4
 

@@ -2,9 +2,11 @@ package finalize
 
 import (
 	"fmt"
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 
 	"github.com/cloudfoundry/java-buildpack/src/java/containers"
 	"github.com/cloudfoundry/java-buildpack/src/java/frameworks"
@@ -157,7 +159,7 @@ func (f *Finalizer) finalizeFrameworks() error {
 		return nil
 	}
 
-	f.Log.Info("Finalizing frameworks: %v", frameworkNames)
+	f.Log.Info("Finalizing frameworks: %v", strings.Join(frameworkNames, ","))
 
 	// Finalize all detected frameworks
 	for i, framework := range detectedFrameworks {
