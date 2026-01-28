@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -178,10 +178,11 @@ func (s *SpringAutoReconfigurationFramework) hasJavaCfEnv() bool {
 
 	// Also check if java_cf_env framework is being installed
 	javaCfEnvDir := filepath.Join(s.context.Stager.DepDir(), "java_cf_env")
+	fmt.Printf("javaCfEnvDir: %v", javaCfEnvDir)
 	if _, err := os.Stat(javaCfEnvDir); err == nil {
 		return true
 	}
-
+	fmt.Printf("niama javaCfEnvDir: %v", javaCfEnvDir)
 	return false
 }
 
