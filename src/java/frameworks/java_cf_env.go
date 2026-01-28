@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,6 +27,7 @@ func NewJavaCfEnvFramework(ctx *common.Context) *JavaCfEnvFramework {
 func (j *JavaCfEnvFramework) Detect() (string, error) {
 	// Check if enabled in configuration
 	enabled := j.isEnabled()
+	fmt.Printf("CFenv enabled: %v", enabled)
 	if !enabled {
 		return "", nil
 	}
@@ -103,6 +104,7 @@ func (j *JavaCfEnvFramework) isEnabled() bool {
 		// Parse YAML configuration
 		var yamlContent interface{}
 		if err := yaml.Unmarshal([]byte(configOverride), &yamlContent); err != nil {
+			fmt.Printf("Ima greshka")
 			j.context.Log.Warning("Failed to parse JBP_CONFIG_JAVA_CF_ENV, treating as enabled: %s", err)
 			return true
 		}
