@@ -118,10 +118,12 @@ func (j *JavaCfEnvFramework) isEnabled() bool {
 			var err error
 			configData, err = yaml.Marshal(v)
 			if err != nil {
+				fmt.Printf("Failed to marshal config, treating as enabled: %s", err)
 				j.context.Log.Warning("Failed to marshal config, treating as enabled: %s", err)
 				return true
 			}
 		default:
+			fmt.Printf("nexpected YAML type, treating as enabled: %T", v)
 			j.context.Log.Warning("Unexpected YAML type, treating as enabled: %T", v)
 			return true
 		}
@@ -131,6 +133,7 @@ func (j *JavaCfEnvFramework) isEnabled() bool {
 			Enabled bool `yaml:"enabled"`
 		}
 		if err := yaml.Unmarshal(configData, &config); err != nil {
+			fmt.Printf("Failed to parse config structure, treating as enabled: %s", err)
 			j.context.Log.Warning("Failed to parse config structure, treating as enabled: %s", err)
 			return true
 		}
