@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,6 +47,11 @@ func (s *SpringAutoReconfigurationFramework) Detect() (string, error) {
 
 // Supply installs the Spring Auto-reconfiguration JAR
 func (s *SpringAutoReconfigurationFramework) Supply() error {
+	// Check again if java-cfenv framework is being installed
+	if s.hasJavaCfEnv() {
+		s.context.Log.Debug("java-cfenv present, skipping Spring Auto-reconfiguration installation")
+		return nil
+	}
 	s.context.Log.BeginStep("Installing Spring Auto-reconfiguration")
 
 	// Log deprecation warnings
@@ -54,12 +59,6 @@ func (s *SpringAutoReconfigurationFramework) Supply() error {
 		s.context.Log.Warning("ATTENTION: The Spring Cloud Connectors library is present in your application. This library " +
 			"has been in maintenance mode since July 2019 and is no longer receiving updates.")
 		s.context.Log.Warning("Please migrate to java-cfenv immediately. See https://via.vmw.com/EiBW for migration instructions.")
-	}
-
-	// Check again if java-cfenv framework is being installed
-	if s.hasJavaCfEnv() {
-		s.context.Log.Debug("java-cfenv present, skipping Spring Auto-reconfiguration installation")
-		return nil
 	}
 
 	// Get Spring Auto-reconfiguration dependency from manifest
