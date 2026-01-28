@@ -51,8 +51,8 @@ func (r *Registry) RegisterStandardFrameworks() {
 	r.Register(NewElasticApmAgentFramework(r.context))
 
 	// Spring Service Bindings (Priority 1)
-	r.Register(NewSpringAutoReconfigurationFramework(r.context))
 	r.Register(NewJavaCfEnvFramework(r.context))
+	r.Register(NewSpringAutoReconfigurationFramework(r.context))
 
 	// JDBC Drivers (Priority 1)
 	r.Register(NewPostgresqlJdbcFramework(r.context))
