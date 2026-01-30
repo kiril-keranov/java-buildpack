@@ -103,13 +103,13 @@ This creates executables in the `bin/` directory:
 ```
 java-buildpack/
 ├── bin/                                # Phase scripts
-│   ├── compile                         # Compile phase executable
-│   ├── detect                          # Detect phase executable
-│   ├── supply                          # Supply phase executable
-│   ├── release                         # Release phase executable
-│   └── finalize                        # Finalize phase executable
+│   ├── compile                         # Compile phase script
+│   ├── detect                          # Detect phase script
+│   ├── supply                          # Supply phase script
+│   ├── release                         # Release phase script
+│   └── finalize                        # Finalize phase script
 ├── ci/                                 # ci scripts
-├── docs/                               # detailes docs about frameworks, development and testing
+├── docs/                               # Detailes docs about frameworks, development and testing
 ├── src/java/                           # Go source code
 |   ├── common/                         # Common code and libbuildpack context
 │   ├── containers/                     # Container implementations (8 types)
