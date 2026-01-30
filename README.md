@@ -320,6 +320,7 @@ $ ./scripts/unit.sh
 $ BUILDPACK_FILE="$(pwd)/build/buildpack.zip" \
 ./scripts/integration.sh --platform docker --parallel true  --github-token MYTOKEN
 ```
+For detailed guidelines about setting up and running tests please check this [Testing Guide](docs/TESTING.md)
 
 [Running Cloud Foundry locally][] is useful for privately testing new features.
 
