@@ -95,7 +95,14 @@ func (s *SkyWalkingAgentFramework) Supply() error {
 // Finalize configures the SkyWalking agent
 func (s *SkyWalkingAgentFramework) Finalize() error {
 	if s.jarPath == "" {
-		return nil
+		agentDir := filepath.Join(s.context.Stager.DepDir(), "sky_walking_agent")
+
+		// Find the installed agent JAR (in skywalking-agent subdirectory)
+		jarPattern := filepath.Join(agentDir, "skywalking-agent", "skywalking-agent.jar")
+		if _, err := os.Stat(jarPattern); err != nil {
+			return fmt.Errorf("SkyWalking agent JAR not found after installation: %w", err)
+		}
+		s.jarPath = jarPattern
 	}
 
 	s.context.Log.BeginStep("Configuring SkyWalking agent")
