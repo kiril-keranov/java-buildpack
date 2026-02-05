@@ -98,7 +98,13 @@ func (g *GoogleStackdriverProfilerFramework) Supply() error {
 // Finalize configures the Google Stackdriver Profiler
 func (g *GoogleStackdriverProfilerFramework) Finalize() error {
 	if g.agentPath == "" {
-		return nil
+		profilerDir := filepath.Join(g.context.Stager.DepDir(), "google_stackdriver_profiler")
+		// Find the installed agent (native library)
+		agentPattern := filepath.Join(profilerDir, "profiler_java_agent.so")
+		if _, err := os.Stat(agentPattern); err != nil {
+			return fmt.Errorf("Google Stackdriver Profiler agent not found after installation: %w", err)
+		}
+		g.agentPath = agentPattern
 	}
 
 	g.context.Log.BeginStep("Configuring Google Stackdriver Profiler")
