@@ -89,6 +89,7 @@ func (g *GoogleStackdriverProfilerFramework) Supply() error {
 		return fmt.Errorf("Google Stackdriver Profiler agent not found after installation: %w", err)
 	}
 	g.agentPath = agentPattern
+	g.context.Log.Info("Google Stackdriver Profiler agentPattern %v", agentPattern)
 
 	g.context.Log.Info("Google Stackdriver Profiler %s installed", dep.Version)
 	return nil

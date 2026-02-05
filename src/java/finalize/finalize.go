@@ -163,7 +163,7 @@ func (f *Finalizer) finalizeFrameworks() error {
 	for i, framework := range detectedFrameworks {
 		f.Log.Info("Finalizing framework: %s", frameworkNames[i])
 		if err := framework.Finalize(); err != nil {
-			f.Log.Warning("Failed to finalize framework %s: %s", frameworkNames[i], err.Error())
+			f.Log.Error("Failed to finalize framework %s: %s", frameworkNames[i], err.Error())
 			// Continue with other frameworks even if one fails
 			continue
 		}
