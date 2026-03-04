@@ -94,7 +94,7 @@ func (g *GroovyContainer) Finalize() error {
 	jarFiles, err := filepath.Glob(filepath.Join(g.context.Stager.BuildDir(), "lib", "*.jar"))
 	if err == nil {
 		for _, jar := range jarFiles {
-			classpathEntries = append(classpathEntries, filepath.Base(jar))
+			classpathEntries = append(classpathEntries, filepath.Join(g.context.Stager.BuildDir(), "lib", filepath.Base(jar)))
 		}
 	}
 	g.context.Log.Warning("Classpath entries: %s", strings.Join(classpathEntries, ":"))
