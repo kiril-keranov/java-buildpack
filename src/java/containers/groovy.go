@@ -85,16 +85,16 @@ func (g *GroovyContainer) Finalize() error {
 
 	var classpathEntries []string
 	// Add lib directory if it exists
-	libDir := filepath.Join(g.context.Stager.BuildDir(), "lib")
-	if _, err := os.Stat(libDir); err == nil {
-		classpathEntries = append(classpathEntries, "lib/*")
-	} else {
-		return fmt.Errorf("failed to write CLASSPATH: %w", err)
-	}
+	//libDir := filepath.Join(g.context.Stager.BuildDir(), "lib")
+	//if _, err := os.Stat(libDir); err == nil {
+	//	classpathEntries = append(classpathEntries, "lib/*")
+	//} else {
+	//	return fmt.Errorf("failed to write CLASSPATH: %w", err)
+	//}
 	jarFiles, err := filepath.Glob(filepath.Join(g.context.Stager.BuildDir(), "lib", "*.jar"))
 	if err == nil {
 		for _, jar := range jarFiles {
-			classpathEntries = append(classpathEntries, filepath.Join(g.context.Stager.BuildDir(), "lib", filepath.Base(jar)))
+			classpathEntries = append(classpathEntries, filepath.Join("home", "vcap", "app", "lib", filepath.Base(jar)))
 		}
 	}
 	g.context.Log.Warning("Classpath entries: %s", strings.Join(classpathEntries, ":"))
