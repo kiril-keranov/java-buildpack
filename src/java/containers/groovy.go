@@ -91,6 +91,12 @@ func (g *GroovyContainer) Finalize() error {
 	} else {
 		return fmt.Errorf("failed to write CLASSPATH: %w", err)
 	}
+	jarFiles, err := filepath.Glob(filepath.Join(g.context.Stager.BuildDir(), "lib", "*.jar"))
+	if err == nil {
+		for _, jar := range jarFiles {
+			classpathEntries = append(classpathEntries, filepath.Base(jar))
+		}
+	}
 	g.context.Log.Warning("Classpath entries: %s", strings.Join(classpathEntries, ":"))
 	// Write CLASSPATH environment variable
 	if err := g.context.Stager.WriteEnvFile("CLASSPATH", strings.Join(classpathEntries, ":")); err != nil {
