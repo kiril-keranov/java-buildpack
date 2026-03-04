@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // GroovyContainer handles Groovy script applications
@@ -82,6 +83,17 @@ func (g *GroovyContainer) Supply() error {
 func (g *GroovyContainer) Finalize() error {
 	g.context.Log.BeginStep("Finalizing Groovy")
 
+	var classpathEntries []string
+	// Add lib directory if it exists
+	libDir := filepath.Join(buildDir, "lib")
+	if _, err := os.Stat(libDir); err == nil {
+		classpathEntries = append(classpathEntries, "lib/*")
+	}
+
+	// Write CLASSPATH environment variable
+	if err := g.context.Stager.WriteEnvFile("CLASSPATH", strings.Join(classpathEntries, ":")); err != nil {
+		return fmt.Errorf("failed to write CLASSPATH: %w", err)
+	}
 	// Note: JAVA_OPTS (including JVMKill agent) is configured by the JRE component
 	// via profile.d/java_opts.sh. No need to configure it here to avoid duplication.
 
