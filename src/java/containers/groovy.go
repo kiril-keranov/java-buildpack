@@ -88,12 +88,14 @@ func (g *GroovyContainer) Finalize() error {
 	libDir := filepath.Join(g.context.Stager.BuildDir(), "lib")
 	if _, err := os.Stat(libDir); err == nil {
 		classpathEntries = append(classpathEntries, "lib/*")
+	} else {
+		return fmt.Errorf("failed to write CLASSPATH: %w", err)
 	}
 
 	// Write CLASSPATH environment variable
 	if err := g.context.Stager.WriteEnvFile("CLASSPATH", strings.Join(classpathEntries, ":")); err != nil {
 		return fmt.Errorf("failed to write CLASSPATH: %w", err)
-	}
+	} 
 	// Note: JAVA_OPTS (including JVMKill agent) is configured by the JRE component
 	// via profile.d/java_opts.sh. No need to configure it here to avoid duplication.
 
