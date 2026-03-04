@@ -85,7 +85,7 @@ func (g *GroovyContainer) Finalize() error {
 
 	var classpathEntries []string
 	// Add lib directory if it exists
-	libDir := filepath.Join(buildDir, "lib")
+	libDir := filepath.Join(g.context.Stager.BuildDir(), "lib")
 	if _, err := os.Stat(libDir); err == nil {
 		classpathEntries = append(classpathEntries, "lib/*")
 	}
