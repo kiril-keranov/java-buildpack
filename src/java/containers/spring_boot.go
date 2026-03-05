@@ -1,8 +1,8 @@
 package containers
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -208,6 +208,7 @@ func (s *SpringBootContainer) Finalize() error {
 	additionalOpts := []string{
 		"-Djava.io.tmpdir=$TMPDIR",
 		"-XX:+ExitOnOutOfMemoryError",
+		"-Dtest.prop=test",
 	}
 
 	// Combine existing opts with additional opts
