@@ -71,10 +71,12 @@ func (c *ClientCertificateMapperFramework) Finalize() error {
 
 	// Add to classpath via CLASSPATH environment variable
 	classpath := os.Getenv("CLASSPATH")
+	c.context.Log.Warning("Classpath in java cf env finalize %s", classpath)
 	if classpath != "" {
 		classpath += ":"
 	}
 	classpath += matches[0]
+	c.context.Log.Warning("Adding to classpath %s", matches[0])
 
 	if err := c.context.Stager.WriteEnvFile("CLASSPATH", classpath); err != nil {
 		return fmt.Errorf("failed to set CLASSPATH for Client Certificate Mapper: %w", err)

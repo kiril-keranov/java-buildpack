@@ -1,8 +1,8 @@
 package frameworks
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -83,11 +83,12 @@ func (j *JavaCfEnvFramework) Finalize() error {
 
 	// Add to classpath via CLASSPATH environment variable
 	classpath := os.Getenv("CLASSPATH")
+	j.context.Log.Warning("Classpath in java cf env finalize %s", classpath)
 	if classpath != "" {
 		classpath += ":"
 	}
 	classpath += matches[0]
-
+	j.context.Log.Warning("Adding to classpath %s", matches[0])
 	if err := j.context.Stager.WriteEnvFile("CLASSPATH", classpath); err != nil {
 		return fmt.Errorf("failed to set CLASSPATH for Java CF Env: %w", err)
 	}
