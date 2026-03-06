@@ -260,6 +260,7 @@ func (t *TomcatContainer) createSetenvScript(tomcatDir, loggingSupportJar string
 	setenvContent := fmt.Sprintf(`#!/bin/sh
 JAVA_OPTS="$JAVA_OPTS -Xbootclasspath/a:%s"
 CLASSPATH="$CLASSPATH"
+echo "Testing check"
 echo $CLASSPATH
 export CLASSPATH
 `, jarPath)
