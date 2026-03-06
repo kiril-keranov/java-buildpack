@@ -283,7 +283,7 @@ func (s *SpringBootContainer) isSpringBootExplodedJar(buildDir string) bool {
 	manifestPath := filepath.Join(buildDir, "META-INF", "MANIFEST.MF")
 	data, err := os.ReadFile(manifestPath)
 	if err != nil {
-		s.context.Log.Debug("Could not read MANIFEST.MF: %s", err.Error())
+		s.context.Log.Warning("Could not read MANIFEST.MF: %s", err.Error())
 		return false
 	}
 
@@ -301,12 +301,12 @@ func (s *SpringBootContainer) isSpringBootExplodedJar(buildDir string) bool {
 			strings.HasPrefix(line, "Spring-Boot-Version:") ||
 			strings.HasPrefix(line, "Spring-Boot-Classes:") ||
 			strings.HasPrefix(line, "Spring-Boot-Lib:") {
-			s.context.Log.Debug("Found Spring Boot marker in MANIFEST.MF: %s", line)
+			s.context.Log.Warning("Found Spring Boot marker in MANIFEST.MF: %s", line)
 			return true
 		}
 	}
 
-	s.context.Log.Debug("No Spring Boot markers found in MANIFEST.MF - this is a plain exploded JAR")
+	s.context.Log.Warning("No Spring Boot markers found in MANIFEST.MF - this is a plain exploded JAR")
 	return false
 }
 
@@ -340,7 +340,7 @@ func (s *SpringBootContainer) getJarLauncherClass(buildDir string) string {
 	manifestPath := filepath.Join(buildDir, "META-INF", "MANIFEST.MF")
 	data, err := os.ReadFile(manifestPath)
 	if err != nil {
-		s.context.Log.Debug("Could not read MANIFEST.MF for version detection: %s", err.Error())
+		s.context.Log.Warning("Could not read MANIFEST.MF for version detection: %s", err.Error())
 		// Default to Spring Boot 3.x (newer) launcher
 		return "org.springframework.boot.loader.launch.JarLauncher"
 	}
@@ -351,7 +351,7 @@ func (s *SpringBootContainer) getJarLauncherClass(buildDir string) string {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "Main-Class:") {
 			mainClass := strings.TrimSpace(strings.TrimPrefix(line, "Main-Class:"))
-			s.context.Log.Debug("Found Main-Class in MANIFEST.MF: %s", mainClass)
+			s.context.Log.Warning("Found Main-Class in MANIFEST.MF: %s", mainClass)
 
 			// If Main-Class is set to JarLauncher, use that exact class
 			if strings.Contains(mainClass, "JarLauncher") {
@@ -365,7 +365,7 @@ func (s *SpringBootContainer) getJarLauncherClass(buildDir string) string {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "Spring-Boot-Version:") {
 			version := strings.TrimSpace(strings.TrimPrefix(line, "Spring-Boot-Version:"))
-			s.context.Log.Debug("Found Spring-Boot-Version: %s", version)
+			s.context.Log.Warning("Found Spring-Boot-Version: %s", version)
 
 			// Spring Boot 3.x changed the loader package structure
 			if strings.HasPrefix(version, "3.") {
@@ -377,6 +377,6 @@ func (s *SpringBootContainer) getJarLauncherClass(buildDir string) string {
 	}
 
 	// Default to Spring Boot 3.x (newer) launcher if version couldn't be determined
-	s.context.Log.Debug("Could not determine Spring Boot version, defaulting to 3.x launcher")
+	s.context.Log.Warning("Could not determine Spring Boot version, defaulting to 3.x launcher")
 	return "org.springframework.boot.loader.launch.JarLauncher"
 }
