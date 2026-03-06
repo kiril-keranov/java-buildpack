@@ -75,7 +75,7 @@ func (p *PostgresqlJdbcFramework) Finalize() error {
 	depsIdx := p.context.Stager.DepsIdx()
 	runtimePath := fmt.Sprintf("$DEPS_DIR/%s/postgresql_jdbc/%s", depsIdx, filepath.Base(matches[0]))
 
-	profileScript := fmt.Sprintf("export CLASSPATH=\"%s:${CLASSPATH:-}\"\n", runtimePath)
+	profileScript := fmt.Sprintf("export CLASSPATH=\"%s{CLASSPATH:+:$CLASSPATH}\"\n", runtimePath)
 	if err := p.context.Stager.WriteProfileD("postgresql_jdbc.sh", profileScript); err != nil {
 		return fmt.Errorf("failed to write postgresql_jdbc.sh profile.d script: %w", err)
 	}
