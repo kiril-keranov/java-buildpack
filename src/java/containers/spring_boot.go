@@ -240,7 +240,7 @@ func (s *SpringBootContainer) Release() (string, error) {
 			// Determine the correct JarLauncher class name based on Spring Boot version
 			jarLauncherClass := s.getJarLauncherClass(buildDir)
 			// Use eval to properly handle backslash-escaped values in $JAVA_OPTS (Ruby buildpack parity)
-			return fmt.Sprintf("eval exec $JAVA_HOME/bin/java $JAVA_OPTS -cp /home/vcap/app/.:$CLASSPATH %s", jarLauncherClass), nil
+			return fmt.Sprintf("eval exec $JAVA_HOME/bin/java $JAVA_OPTS -cp .:$CLASSPATH %s", jarLauncherClass), nil
 			//return fmt.Sprintf("eval exec echo \".$CLASSPATH\" %s", jarLauncherClass), nil
 		}
 
