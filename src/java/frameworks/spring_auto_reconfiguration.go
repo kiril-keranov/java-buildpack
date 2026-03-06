@@ -104,7 +104,7 @@ func (s *SpringAutoReconfigurationFramework) Finalize() error {
 	depsIdx := s.context.Stager.DepsIdx()
 	runtimePath := fmt.Sprintf("$DEPS_DIR/%s/spring_auto_reconfiguration/%s", depsIdx, filepath.Base(matches[0]))
 
-	profileScript := fmt.Sprintf("export CLASSPATH=\"%s{CLASSPATH:+:$CLASSPATH}\"\n", runtimePath)
+	profileScript := fmt.Sprintf("export CLASSPATH=\"%s${CLASSPATH:+:$CLASSPATH}\"\n", runtimePath)
 	if err := s.context.Stager.WriteProfileD("spring_auto_reconfiguration.sh", profileScript); err != nil {
 		return fmt.Errorf("failed to write spring_auto_reconfiguration.sh profile.d script: %w", err)
 	}

@@ -91,7 +91,7 @@ func (f *MariaDBJDBCFramework) Finalize() error {
 	depsIdx := f.context.Stager.DepsIdx()
 	runtimePath := fmt.Sprintf("$DEPS_DIR/%s/mariadb_jdbc/%s", depsIdx, filepath.Base(f.jarPath))
 
-	profileScript := fmt.Sprintf("export CLASSPATH=\"%s{CLASSPATH:+:$CLASSPATH}\"\n", runtimePath)
+	profileScript := fmt.Sprintf("export CLASSPATH=\"%s${CLASSPATH:+:$CLASSPATH}\"\n", runtimePath)
 	if err := f.context.Stager.WriteProfileD("mariadb_jdbc.sh", profileScript); err != nil {
 		f.context.Log.Warning("Failed to add MariaDB JDBC to CLASSPATH: %s", err)
 		return nil // Non-blocking

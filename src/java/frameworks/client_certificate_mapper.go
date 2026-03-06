@@ -72,7 +72,7 @@ func (c *ClientCertificateMapperFramework) Finalize() error {
 	depsIdx := c.context.Stager.DepsIdx()
 	runtimePath := fmt.Sprintf("$DEPS_DIR/%s/client_certificate_mapper/%s", depsIdx, filepath.Base(matches[0]))
 
-	profileScript := fmt.Sprintf("export CLASSPATH=\"%s{CLASSPATH:+:$CLASSPATH}\"\n", runtimePath)
+	profileScript := fmt.Sprintf("export CLASSPATH=\"%s${CLASSPATH:+:$CLASSPATH}\"\n", runtimePath)
 	//profileScript := fmt.Sprintf("export CLASSPATH=\"%s:${CLASSPATH:-}\"\n", runtimePath)
 	if err := c.context.Stager.WriteProfileD("client_certificate_mapper.sh", profileScript); err != nil {
 		return fmt.Errorf("failed to write client_certificate_mapper.sh profile.d script: %w", err)

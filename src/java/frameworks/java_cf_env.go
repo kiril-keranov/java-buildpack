@@ -84,7 +84,7 @@ func (j *JavaCfEnvFramework) Finalize() error {
 	depsIdx := j.context.Stager.DepsIdx()
 	runtimePath := fmt.Sprintf("$DEPS_DIR/%s/java_cf_env/%s", depsIdx, filepath.Base(matches[0]))
 
-	profileScript := fmt.Sprintf("export CLASSPATH=\"%s{CLASSPATH:+:$CLASSPATH}\"\n", runtimePath)
+	profileScript := fmt.Sprintf("export CLASSPATH=\"%s${CLASSPATH:+:$CLASSPATH}\"\n", runtimePath)
 	//profileScript := fmt.Sprintf("export CLASSPATH=\"%s:${CLASSPATH:-}\"\n", runtimePath)
 	if err := j.context.Stager.WriteProfileD("java_cf_env.sh", profileScript); err != nil {
 		return fmt.Errorf("failed to write java_cf_env.sh profile.d script: %w", err)
