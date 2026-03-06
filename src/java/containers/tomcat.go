@@ -260,6 +260,7 @@ func (t *TomcatContainer) createSetenvScript(tomcatDir, loggingSupportJar string
 	setenvContent := fmt.Sprintf(`#!/bin/sh
 JAVA_OPTS="$JAVA_OPTS -Xbootclasspath/a:%s"
 CLASSPATH="$CLASSPATH"
+export CLASSPATH
 `, jarPath)
 
 	if err := os.WriteFile(setenvPath, []byte(setenvContent), 0755); err != nil {
