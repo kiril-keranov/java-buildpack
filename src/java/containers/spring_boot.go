@@ -354,9 +354,9 @@ func (s *SpringBootContainer) getJarLauncherClass(buildDir string) string {
 			s.context.Log.Warning("Found Main-Class in MANIFEST.MF: %s", mainClass)
 
 			// If Main-Class is set to JarLauncher, use that exact class
-			if strings.Contains(mainClass, "JarLauncher") {
-				return mainClass
-			}
+			//if strings.Contains(mainClass, "JarLauncher") {
+			return mainClass
+			//}
 		}
 	}
 
