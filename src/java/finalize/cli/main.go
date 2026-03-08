@@ -66,6 +66,6 @@ func main() {
 		logger.Error("Unable to setup launch environment: %s", err.Error())
 		os.Exit(14)
 	}
-
+	logger.Warning("Check classpath: " + os.Getenv("CLASSPATH"))
 	stager.StagingComplete()
 }
