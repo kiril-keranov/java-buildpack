@@ -68,7 +68,7 @@ func (c *ClientCertificateMapperFramework) Finalize() error {
 		// JAR not found, might not have been installed
 		return nil
 	}
-
+	c.context.Classpath = append(c.context.Classpath, matches[0])
 	depsIdx := c.context.Stager.DepsIdx()
 	runtimePath := fmt.Sprintf("$DEPS_DIR/%s/client_certificate_mapper/%s", depsIdx, filepath.Base(matches[0]))
 

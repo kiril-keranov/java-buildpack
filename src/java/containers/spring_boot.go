@@ -235,6 +235,16 @@ func (s *SpringBootContainer) Release() (string, error) {
 	bootInf := filepath.Join(buildDir, "BOOT-INF")
 	if _, err := os.Stat(bootInf); err == nil {
 		// Verify this is actually a Spring Boot application
+		for _, cpEntry := range s.context.Classpath {
+			link := filepath.Join(buildDir, "BOOT-INF", "lib", filepath.Base(cpEntry))
+
+			err := os.Symlink(cpEntry, link)
+			if err != nil {
+				fmt.Println("Error creating symlink:", err)
+				s.context.Log.Warning("Error creating symlink")
+			}
+		}
+
 		if s.isSpringBootExplodedJar(buildDir) {
 			// True Spring Boot exploded JAR - use JarLauncher
 			// Determine the correct JarLauncher class name based on Spring Boot version

@@ -48,6 +48,7 @@ type Context struct {
 	Installer Installer
 	Log       *libbuildpack.Logger
 	Command   Command
+	Classpath []string
 }
 
 // DetermineJavaVersion determines the major Java version from a Java installation
