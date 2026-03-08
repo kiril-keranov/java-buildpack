@@ -73,6 +73,7 @@ func (c *ClientCertificateMapperFramework) Finalize() error {
 	runtimePath := fmt.Sprintf("../../../deps/%s/client_certificate_mapper/%s", depsIdx, filepath.Base(matches[0]))
 	c.context.Classpath = append(c.context.Classpath, runtimePath)
 	c.context.Log.Warning("Appending to cp %s", runtimePath)
+	c.context.Log.Warning("deps dir %s", os.Getenv("DEPS_DIR"))
 
 	//profileScript := fmt.Sprintf("export CLASSPATH=\"%s${CLASSPATH:+:$CLASSPATH}\"\n", runtimePath)
 	profileScript := fmt.Sprintf("export CLASSPATH=\"%s\"\n", runtimePath)
