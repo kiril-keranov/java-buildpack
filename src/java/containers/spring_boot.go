@@ -235,8 +235,11 @@ func (s *SpringBootContainer) Release() (string, error) {
 	bootInf := filepath.Join(buildDir, "BOOT-INF")
 	if _, err := os.Stat(bootInf); err == nil {
 		// Verify this is actually a Spring Boot application
+		fmt.Printf("classpath %s", s.context.Classpath)
 		for _, cpEntry := range s.context.Classpath {
 			link := filepath.Join(buildDir, "BOOT-INF", "lib", filepath.Base(cpEntry))
+			fmt.Printf("cpentry: %s", cpEntry)
+			fmt.Printf("symlink: %s", link)
 
 			err := os.Symlink(cpEntry, link)
 			if err != nil {
