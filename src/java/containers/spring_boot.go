@@ -251,7 +251,7 @@ func (s *SpringBootContainer) Release() (string, error) {
 		symlinkScript := fmt.Sprintf(`#!/bin/bash
 set -uo pipefail
 
-TARGET_DIR="%s"
+TARGET_DIR="$PWD/%s"
 CLASSPATH=${CLASSPATH:-default_value}
 # Split CLASSPATH on :
 IFS=':' read -ra PATHS <<< "$CLASSPATH"
@@ -267,7 +267,7 @@ for p in "${PATHS[@]}"; do
     ln -s "$p" "$link"
     echo "Created symlink: $link -> $p"
 done
-`, filepath.Join(bootInf, "lib"))
+`, filepath.Join("BOOT-INF", "lib"))
 
 		if err := s.context.Stager.WriteProfileD("zclasspath_symlinks.sh", symlinkScript); err != nil {
 			return "", fmt.Errorf("failed to write zclasspath_symlinks.sh: %w", err)
