@@ -69,6 +69,7 @@ func (p *PostgresqlJdbcFramework) Finalize() error {
 	matches, err := filepath.Glob(jarPattern)
 	if err != nil || len(matches) == 0 {
 		// JAR not found, might not have been installed
+		p.context.Log.Warning("postgresql not installed")
 		return nil
 	}
 
