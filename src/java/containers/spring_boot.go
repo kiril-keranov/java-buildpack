@@ -253,6 +253,9 @@ set -uo pipefail
 
 TARGET_DIR="$PWD/%s"
 CLASSPATH=${CLASSPATH:-default_value}
+
+mkdir -p "$TARGET_DIR"
+
 # Split CLASSPATH on :
 IFS=':' read -ra PATHS <<< "$CLASSPATH"
 
