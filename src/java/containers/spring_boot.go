@@ -249,7 +249,7 @@ func (s *SpringBootContainer) Release() (string, error) {
 		//}
 
 		symlinkScript := fmt.Sprintf(`#!/bin/bash
-set -euo pipefail
+set -uo pipefail
 
 TARGET_DIR="%s"
 CLASSPATH=${CLASSPATH:-default_value}
