@@ -247,7 +247,7 @@ func (s *SpringBootContainer) Release() (string, error) {
 		//		s.context.Log.Warning("Error creating symlink")
 		//	}
 		//}
-		s.context.Stager.WriteProfileD()
+		//s.context.Stager.WriteProfileD()
 		if s.isSpringBootExplodedJar(buildDir) {
 			// True Spring Boot exploded JAR - use JarLauncher
 			// Determine the correct JarLauncher class name based on Spring Boot version
