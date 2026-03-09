@@ -269,8 +269,8 @@ for p in "${PATHS[@]}"; do
 done
 `, filepath.Join(bootInf, "lib"))
 
-		if err := s.context.Stager.WriteProfileD("99_classpath_symlinks.sh", symlinkScript); err != nil {
-			return "", fmt.Errorf("failed to write 99_classpath_symlinks.sh: %w", err)
+		if err := s.context.Stager.WriteProfileD("aclasspath_symlinks.sh", symlinkScript); err != nil {
+			return "", fmt.Errorf("failed to write aclasspath_symlinks.sh: %w", err)
 		}
 		if s.isSpringBootExplodedJar(buildDir) {
 			// True Spring Boot exploded JAR - use JarLauncher
