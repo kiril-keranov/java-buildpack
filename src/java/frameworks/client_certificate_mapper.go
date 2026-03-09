@@ -70,7 +70,10 @@ func (c *ClientCertificateMapperFramework) Finalize() error {
 	}
 
 	depsIdx := c.context.Stager.DepsIdx()
-	runtimePath := fmt.Sprintf("../../../deps/%s/client_certificate_mapper/%s", depsIdx, filepath.Base(matches[0]))
+	//runtimePath := fmt.Sprintf("../../../deps/%s/client_certificate_mapper/%s", depsIdx, filepath.Base(matches[0]))
+	runtimePath := fmt.Sprintf(`
+		"$DEPS_DIR/%s/client_certificate_mapper/%s"
+	`, depsIdx, filepath.Base(matches[0]))
 	c.context.Classpath = append(c.context.Classpath, runtimePath)
 	c.context.Log.Warning("Appending to cp %s", runtimePath)
 	c.context.Log.Warning("deps dir %s", os.Getenv("DEPS_DIR"))
