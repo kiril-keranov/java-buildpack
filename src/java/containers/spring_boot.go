@@ -252,7 +252,7 @@ func (s *SpringBootContainer) Release() (string, error) {
 set -euo pipefail
 
 TARGET_DIR="%s"
-
+CLASSPATH=${CLASSPATH:-default_value}
 # Split CLASSPATH on :
 IFS=':' read -ra PATHS <<< "$CLASSPATH"
 
