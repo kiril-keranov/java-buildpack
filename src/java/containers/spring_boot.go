@@ -247,7 +247,31 @@ func (s *SpringBootContainer) Release() (string, error) {
 		//		s.context.Log.Warning("Error creating symlink")
 		//	}
 		//}
-		//s.context.Stager.WriteProfileD()
+
+		symlinkScript := fmt.Sprintf(`#!/bin/bash
+set -euo pipefail
+
+TARGET_DIR="%s"
+
+# Split CLASSPATH on :
+IFS=':' read -ra PATHS <<< "$CLASSPATH"
+
+for p in "${PATHS[@]}"; do
+    # Skip empty entries
+    [[ -z "$p" ]] && continue
+
+    name=$(basename "$p")
+
+    link="$TARGET_DIR/$name"
+
+    ln -s "$p" "$link"
+    echo "Created symlink: $link -> $p"
+done
+`, filepath.Join(bootInf, "lib"))
+
+		if err := s.context.Stager.WriteProfileD("99_classpath_symlinks.sh", symlinkScript); err != nil {
+			return "", fmt.Errorf("failed to write 99_classpath_symlinks.sh: %w", err)
+		}
 		if s.isSpringBootExplodedJar(buildDir) {
 			// True Spring Boot exploded JAR - use JarLauncher
 			// Determine the correct JarLauncher class name based on Spring Boot version
