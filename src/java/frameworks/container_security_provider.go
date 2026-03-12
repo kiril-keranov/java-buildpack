@@ -79,7 +79,7 @@ func (c *ContainerSecurityProviderFramework) Finalize() error {
 		runtimeJarPath := fmt.Sprintf("$DEPS_DIR/%s/container_security_provider/%s", depsIdx, jarFilename)
 		//javaOpts = fmt.Sprintf("-Xbootclasspath/a:%s", runtimeJarPath)
 
-		profileScript := fmt.Sprintf("export CONTAINER_SECURITY_PROVIDER=\"%s\"", runtimeJarPath)
+		profileScript := fmt.Sprintf("export CONTAINER_SECURITY_PROVIDER=\"%s\"\n", runtimeJarPath)
 
 		if err := c.context.Stager.WriteProfileD("container_security_provider.sh", profileScript); err != nil {
 			return fmt.Errorf("failed to write client_certificate_mapper.sh profile.d script: %w", err)
