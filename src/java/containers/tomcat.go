@@ -604,34 +604,34 @@ func (t *TomcatContainer) Finalize() error {
 	buildDir := t.context.Stager.BuildDir()
 	contextXMLPath := filepath.Join(t.context.Stager.DepDir(), "tomcat", "conf", "Catalina", "localhost", "ROOT.xml")
 
-	symlinkScript := fmt.Sprintf(`#!/bin/bash
-set -uo pipefail
+	//	symlinkScript := fmt.Sprintf(`#!/bin/bash
+	//set -uo pipefail
+	//
+	//TARGET_DIR="$PWD/%s"
+	//CLASSPATH=${CLASSPATH:-default_value}
+	//
+	//mkdir -p "$TARGET_DIR"
+	//
+	//# Split CLASSPATH on :
+	//IFS=':' read -ra PATHS <<< "$CLASSPATH"
+	//
+	//for p in "${PATHS[@]}"; do
+	//    # Skip empty entries
+	//    [[ -z "$p" ]] && continue
+	//
+	//    name=$(basename "$p")
+	//
+	//    link="$TARGET_DIR/$name"
+	//
+	//    ln -s "$p" "$link"
+	//    echo "Created symlink: $link -> $p"
+	//done
+	//echo "classpath tst: $CLASSPATH"
+	//`, filepath.Join("WEB-INF", "lib"))
 
-TARGET_DIR="$PWD/%s"
-CLASSPATH=${CLASSPATH:-default_value}
-
-mkdir -p "$TARGET_DIR"
-
-# Split CLASSPATH on :
-IFS=':' read -ra PATHS <<< "$CLASSPATH"
-
-for p in "${PATHS[@]}"; do
-    # Skip empty entries
-    [[ -z "$p" ]] && continue
-
-    name=$(basename "$p")
-
-    link="$TARGET_DIR/$name"
-
-    ln -s "$p" "$link"
-    echo "Created symlink: $link -> $p"
-done
-echo "classpath tst: $CLASSPATH"
-`, filepath.Join("WEB-INF", "lib"))
-
-	if err := t.context.Stager.WriteProfileD("zclasspath_symlinks.sh", symlinkScript); err != nil {
-		return fmt.Errorf("failed to write zclasspath_symlinks.sh: %w", err)
-	}
+	//if err := t.context.Stager.WriteProfileD("zclasspath_symlinks.sh", symlinkScript); err != nil {
+	//	return fmt.Errorf("failed to write zclasspath_symlinks.sh: %w", err)
+	//}
 
 	webInf := filepath.Join(buildDir, "WEB-INF")
 	if _, err := os.Stat(webInf); err == nil {
