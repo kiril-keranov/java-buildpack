@@ -259,7 +259,7 @@ func (t *TomcatContainer) createSetenvScript(tomcatDir, loggingSupportJar string
 	jarPath := "$CATALINA_HOME/bin/" + loggingSupportJar
 
 	setenvContent := fmt.Sprintf(`#!/bin/sh
-CLASSPATH="%s${CONTAINER_SECURITY_PROVIDER:+:CONTAINER_SECURITY_PROVIDER}"
+CLASSPATH="%s${CONTAINER_SECURITY_PROVIDER:+:$CONTAINER_SECURITY_PROVIDER}"
 echo "Testing check $JAVA_OPTS"
 echo "Testing check1 $CLASSPATH"
 `, jarPath)
