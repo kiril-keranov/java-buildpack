@@ -259,10 +259,8 @@ func (t *TomcatContainer) createSetenvScript(tomcatDir, loggingSupportJar string
 
 	setenvContent := fmt.Sprintf(`#!/bin/sh
 JAVA_OPTS="$JAVA_OPTS -Xbootclasspath/a:%s"
-CLASSPATH="$CLASSPATH"
 echo "Testing check"
 echo $CLASSPATH
-export CLASSPATH
 `, jarPath)
 
 	if err := os.WriteFile(setenvPath, []byte(setenvContent), 0755); err != nil {
@@ -628,6 +626,7 @@ for p in "${PATHS[@]}"; do
     ln -s "$p" "$link"
     echo "Created symlink: $link -> $p"
 done
+echo "classpath tst: $CLASSPATH"
 `, filepath.Join("WEB-INF", "lib"))
 
 	if err := t.context.Stager.WriteProfileD("zclasspath_symlinks.sh", symlinkScript); err != nil {
