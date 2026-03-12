@@ -121,6 +121,7 @@ func (t *TomcatContainer) Supply() error {
 	envContent := fmt.Sprintf(`export CATALINA_HOME=%s
 export CATALINA_BASE=%s
 export JAVA_OPTS="${JAVA_OPTS:+$JAVA_OPTS }-Dhttp.port=$PORT -Daccess.logging.enabled=%s"
+export CLASSPATH="${CLASSPATH:+:$CLASSPATH}"
 `, tomcatPath, tomcatPath, accessLoggingEnabled)
 
 	if err := t.context.Stager.WriteProfileD("tomcat.sh", envContent); err != nil {
