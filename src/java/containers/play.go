@@ -14,8 +14,9 @@ type PlayContainer struct {
 	context     *common.Context
 	playType    string // "pre22_dist", "pre22_staged", "post22_dist", "post22_staged"
 	playVersion string
-	startScript string
-	libDir      string
+	startScript string // relative path from buildDir
+	libDir      string // absolute staging path
+	appRoot     string // absolute staging path to the app root (may equal buildDir for staged apps)
 }
 
 // NewPlayContainer creates a new Play Framework container
@@ -37,32 +38,31 @@ func (p *PlayContainer) Detect() (string, error) {
 		return "", err
 	}
 
-	// Try to detect Play Framework type in order of specificity
-	// Order matters to avoid ambiguous detection
-	// Check staged apps (more specific - lib/staged only) before dist apps (less specific - has start scripts)
+	// Try to detect Play Framework type in order of specificity.
+	// Staged apps are checked before dist apps (more specific structure).
 
-	// 1. Try Pre22Staged (Play 2.0-2.1 staged app - only staged/ with JARs)
+	// 1. Pre22Staged (Play 2.0-2.1 staged: staged/ dir with play JARs)
 	p.context.Log.Debug("Play: Trying Pre22Staged detection")
 	if p.detectPre22Staged(buildDir) {
 		p.context.Log.Info("Play: Detected Pre22Staged - version %s", p.playVersion)
 		return "Play", nil
 	}
 
-	// 2. Try Post22Staged (Play 2.2+ staged app - only lib/ with JARs)
+	// 2. Post22Staged (Play 2.2+ staged: lib/ dir with play JARs at root)
 	p.context.Log.Debug("Play: Trying Post22Staged detection")
 	if p.detectPost22Staged(buildDir) {
 		p.context.Log.Info("Play: Detected Post22Staged - version %s", p.playVersion)
 		return "Play", nil
 	}
 
-	// 3. Try Post22Dist (Play 2.2+ distributed app in application-root/bin)
+	// 3. Post22Dist (Play 2.2+ dist: application-root/bin/ + application-root/lib/)
 	p.context.Log.Debug("Play: Trying Post22Dist detection")
 	if p.detectPost22Dist(buildDir) {
 		p.context.Log.Info("Play: Detected Post22Dist - version %s", p.playVersion)
 		return "Play", nil
 	}
 
-	// 4. Try Pre22Dist (Play 2.0-2.1 distributed app in application-root/)
+	// 4. Pre22Dist (Play 2.0-2.1 dist: application-root/start + application-root/lib/)
 	p.context.Log.Debug("Play: Trying Pre22Dist detection")
 	if p.detectPre22Dist(buildDir) {
 		p.context.Log.Info("Play: Detected Pre22Dist - version %s", p.playVersion)
@@ -73,35 +73,22 @@ func (p *PlayContainer) Detect() (string, error) {
 	return "", nil
 }
 
-// detectPost22Dist detects Play 2.2+ distributed applications
+// detectPost22Dist detects Play 2.2+ distributed applications.
 // Structure: application-root/bin/<script>, application-root/lib/com.typesafe.play.play_*.jar
 func (p *PlayContainer) detectPost22Dist(buildDir string) bool {
-	// Check for application-root/bin/ directory
-	binDir := filepath.Join(buildDir, "application-root", "bin")
-	binStat, binErr := os.Stat(binDir)
-	if binErr != nil || !binStat.IsDir() {
+	appRoot := filepath.Join(buildDir, "application-root")
+	binDir := filepath.Join(appRoot, "bin")
+	libDir := filepath.Join(appRoot, "lib")
+
+	if !isDir(binDir) || !isDir(libDir) {
 		return false
 	}
 
-	// Check for application-root/lib/ directory
-	libDir := filepath.Join(buildDir, "application-root", "lib")
-	libStat, libErr := os.Stat(libDir)
-	if libErr != nil || !libStat.IsDir() {
-		return false
-	}
-
-	// Find Play JAR in lib/ (com.typesafe.play.play_*.jar)
 	playJar, version := p.findPlayJar(libDir)
-	if playJar == "" {
+	if playJar == "" || !p.isPost22Version(version) {
 		return false
 	}
 
-	// Parse version - must be 2.2 or higher
-	if !p.isPost22Version(version) {
-		return false
-	}
-
-	// Find start script in bin/ (non-.bat file)
 	startScript := p.findStartScript(binDir)
 	if startScript == "" {
 		return false
@@ -111,84 +98,61 @@ func (p *PlayContainer) detectPost22Dist(buildDir string) bool {
 	p.playVersion = version
 	p.startScript = filepath.Join("application-root", "bin", startScript)
 	p.libDir = libDir
+	p.appRoot = appRoot
 	p.context.Log.Debug("Detected Play Framework %s (Post22Dist)", version)
 	return true
 }
 
-// detectPost22Staged detects Play 2.2+ staged applications
-// Structure: lib/com.typesafe.play.play_*.jar (may or may not have bin/ with script)
+// detectPost22Staged detects Play 2.2+ staged applications.
+// Structure: lib/com.typesafe.play.play_*.jar at the build root, optional bin/<script>
 func (p *PlayContainer) detectPost22Staged(buildDir string) bool {
-	// Check for lib/ directory at root
 	libDir := filepath.Join(buildDir, "lib")
-	libStat, libErr := os.Stat(libDir)
-	if libErr != nil || !libStat.IsDir() {
+	if !isDir(libDir) {
 		return false
 	}
 
-	// Find Play JAR in lib/
 	playJar, version := p.findPlayJar(libDir)
-	if playJar == "" {
+	if playJar == "" || !p.isPost22Version(version) {
 		return false
 	}
 
-	// Parse version - must be 2.2 or higher
-	if !p.isPost22Version(version) {
-		return false
-	}
-
-	// Check for bin/ directory at root (optional)
+	startScript := ""
 	binDir := filepath.Join(buildDir, "bin")
-	binStat, binErr := os.Stat(binDir)
-	if binErr == nil && binStat.IsDir() {
-		// Try to find start script in bin/
-		startScript := p.findStartScript(binDir)
-		if startScript != "" {
-			p.startScript = filepath.Join("bin", startScript)
-		} else {
-			p.startScript = "" // No start script, will need to use java command
+	if isDir(binDir) {
+		if s := p.findStartScript(binDir); s != "" {
+			startScript = filepath.Join("bin", s)
 		}
-	} else {
-		p.startScript = "" // No bin/ directory, will need to use java command
 	}
 
 	p.playType = "post22_staged"
 	p.playVersion = version
+	p.startScript = startScript
 	p.libDir = libDir
+	p.appRoot = buildDir
 	p.context.Log.Debug("Detected Play Framework %s (Post22Staged)", version)
 	return true
 }
 
-// detectPre22Dist detects Play 2.0-2.1 distributed applications
+// detectPre22Dist detects Play 2.0-2.1 distributed applications.
 // Structure: application-root/start, application-root/lib/play_*.jar
 func (p *PlayContainer) detectPre22Dist(buildDir string) bool {
-	// Check for application-root/ directory
 	appRoot := filepath.Join(buildDir, "application-root")
-	appRootStat, err := os.Stat(appRoot)
-	if err != nil || !appRootStat.IsDir() {
+	if !isDir(appRoot) {
 		return false
 	}
 
-	// Check for start script
-	startScript := filepath.Join(appRoot, "start")
-	if _, err := os.Stat(startScript); err != nil {
+	startScriptPath := filepath.Join(appRoot, "start")
+	if _, err := os.Stat(startScriptPath); err != nil {
 		return false
 	}
 
-	// Check for lib/ directory
 	libDir := filepath.Join(appRoot, "lib")
-	libStat, libErr := os.Stat(libDir)
-	if libErr != nil || !libStat.IsDir() {
+	if !isDir(libDir) {
 		return false
 	}
 
-	// Find Play JAR (play.play_*.jar or play_*.jar)
 	playJar, version := p.findPlayJar(libDir)
-	if playJar == "" {
-		return false
-	}
-
-	// Version should be 2.0 or 2.1
-	if p.isPost22Version(version) {
+	if playJar == "" || p.isPost22Version(version) {
 		return false
 	}
 
@@ -196,376 +160,337 @@ func (p *PlayContainer) detectPre22Dist(buildDir string) bool {
 	p.playVersion = version
 	p.startScript = filepath.Join("application-root", "start")
 	p.libDir = libDir
+	p.appRoot = appRoot
 	p.context.Log.Debug("Detected Play Framework %s (Pre22Dist)", version)
 	return true
 }
 
-// detectPre22Staged detects Play 2.0-2.1 staged applications
-// Structure: staged/play_*.jar (may or may not have start script)
+// detectPre22Staged detects Play 2.0-2.1 staged applications.
+// Structure: staged/play_*.jar, optional start script at root
 func (p *PlayContainer) detectPre22Staged(buildDir string) bool {
-	// Check for staged/ directory
 	stagedDir := filepath.Join(buildDir, "staged")
 	p.context.Log.Debug("Play Pre22Staged: Checking for staged dir: %s", stagedDir)
-	stagedStat, err := os.Stat(stagedDir)
-	if err != nil || !stagedStat.IsDir() {
-		p.context.Log.Debug("Play Pre22Staged: Staged dir not found or not a directory: %v", err)
+	if !isDir(stagedDir) {
+		p.context.Log.Debug("Play Pre22Staged: Staged dir not found")
 		return false
 	}
-	p.context.Log.Debug("Play Pre22Staged: Staged dir found")
 
-	// Find Play JAR in staged/
 	playJar, version := p.findPlayJar(stagedDir)
 	p.context.Log.Debug("Play Pre22Staged: findPlayJar returned jar=%s, version=%s", playJar, version)
-	if playJar == "" {
-		p.context.Log.Debug("Play Pre22Staged: No Play JAR found")
+	if playJar == "" || p.isPost22Version(version) {
+		p.context.Log.Debug("Play Pre22Staged: No suitable Play JAR found")
 		return false
 	}
 
-	// Version should be 2.0 or 2.1
-	if p.isPost22Version(version) {
-		p.context.Log.Debug("Play Pre22Staged: Version %s is Post22, not Pre22", version)
-		return false
-	}
-
-	// Check if there's a start script (optional)
-	startScript := filepath.Join(buildDir, "start")
-	p.context.Log.Debug("Play Pre22Staged: Checking for start script: %s", startScript)
-	if _, err := os.Stat(startScript); err == nil {
-		p.context.Log.Debug("Play Pre22Staged: Start script found")
-		p.startScript = "start"
-	} else {
-		p.context.Log.Debug("Play Pre22Staged: Start script not found, will use java command")
-		p.startScript = "" // No start script, will need to use java command
+	startScript := ""
+	if _, err := os.Stat(filepath.Join(buildDir, "start")); err == nil {
+		startScript = "start"
 	}
 
 	p.playType = "pre22_staged"
 	p.playVersion = version
+	p.startScript = startScript
 	p.libDir = stagedDir
+	p.appRoot = buildDir
 	p.context.Log.Debug("Detected Play Framework %s (Pre22Staged)", version)
 	return true
 }
 
-// findPlayJar finds the Play Framework JAR and extracts version
-// Returns jar filename and version string
-func (p *PlayContainer) findPlayJar(libDir string) (string, string) {
-	entries, err := os.ReadDir(libDir)
-	if err != nil {
-		return "", ""
-	}
-
-	// Match patterns:
-	// - com.typesafe.play.play_2.10-2.2.0.jar (Play 2.2+)
-	// - play.play_2.9.1-2.0.jar (Play 2.0)
-	// - play_2.10-2.1.4.jar (Play 2.1)
-	playJarPattern := regexp.MustCompile(`^(?:com\.typesafe\.)?play(?:\.play)?_.*-(.+)\.jar$`)
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		name := entry.Name()
-		if matches := playJarPattern.FindStringSubmatch(name); matches != nil {
-			version := matches[1]
-			p.context.Log.Debug("Found Play JAR: %s (version: %s)", name, version)
-			return name, version
-		}
-	}
-
-	return "", ""
-}
-
-// findStartScript finds a non-.bat startup script in the given directory
-func (p *PlayContainer) findStartScript(binDir string) string {
-	entries, err := os.ReadDir(binDir)
-	if err != nil {
-		return ""
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		// Skip .bat files
-		if filepath.Ext(name) != ".bat" {
-			return name
-		}
-	}
-
-	return ""
-}
-
-// isPost22Version checks if version is 2.2 or higher
-func (p *PlayContainer) isPost22Version(version string) bool {
-	// Parse major.minor version
-	parts := strings.Split(version, ".")
-	if len(parts) < 2 {
-		return false
-	}
-
-	major := parts[0]
-	minor := parts[1]
-
-	// Check for 2.2+
-	if major == "2" {
-		// Extract numeric minor version
-		minorInt := 0
-		fmt.Sscanf(minor, "%d", &minorInt)
-		return minorInt >= 2
-	}
-
-	// Version 3+ would also be post-2.2
-	majorInt := 0
-	fmt.Sscanf(major, "%d", &majorInt)
-	return majorInt > 2
-}
-
-// Supply installs and configures the Play Framework application
+// Supply makes start scripts executable and augments the classpath in the script.
+//
+// Ruby buildpack compile() behaviour (base.rb):
+//  1. Replace play.core.server.NettyServer → org.cloudfoundry.reconfiguration.play.Bootstrap
+//  2. chmod 0755 the start script
+//  3. augment_classpath: prepend additional library paths into the script's classpath declaration
 func (p *PlayContainer) Supply() error {
 	p.context.Log.BeginStep("Installing Play Framework %s (%s)", p.playVersion, p.playType)
 
-	// Make start script executable
-	if err := p.makeStartScriptExecutable(); err != nil {
-		return fmt.Errorf("failed to make start script executable: %w", err)
+	if p.startScript == "" {
+		p.context.Log.Info("No start script found, skipping script modifications")
+		return nil
+	}
+
+	buildDir := p.context.Stager.BuildDir()
+	scriptPath := filepath.Join(buildDir, p.startScript)
+
+	// 1. Replace the bootstrap class (base.rb: update_file start_script, ORIGINAL_BOOTSTRAP, REPLACEMENT_BOOTSTRAP)
+	if err := p.replaceInFile(scriptPath,
+		"play.core.server.NettyServer",
+		"org.cloudfoundry.reconfiguration.play.Bootstrap"); err != nil {
+		p.context.Log.Warning("Could not replace bootstrap class in %s: %s", p.startScript, err.Error())
+	}
+
+	// 2. chmod 0755
+	if err := os.Chmod(scriptPath, 0755); err != nil {
+		p.context.Log.Warning("Could not make %s executable: %s", p.startScript, err.Error())
+	}
+
+	// 3. Augment classpath in the start script with additional library paths
+	additionalLibs := p.collectAdditionalLibraries()
+	p.context.Log.Info("Found %d additional libraries for classpath augmentation", len(additionalLibs))
+	if len(additionalLibs) > 0 {
+		if err := p.augmentClasspath(scriptPath, additionalLibs); err != nil {
+			p.context.Log.Warning("Could not augment classpath in %s: %s", p.startScript, err.Error())
+		}
 	}
 
 	p.context.Log.Info("Play Framework %s installation complete", p.playVersion)
 	return nil
 }
 
-// makeStartScriptExecutable ensures the start script has execute permissions
-func (p *PlayContainer) makeStartScriptExecutable() error {
-	buildDir := p.context.Stager.BuildDir()
-	scriptPath := filepath.Join(buildDir, p.startScript)
-
-	if err := os.Chmod(scriptPath, 0755); err != nil {
-		p.context.Log.Warning("Could not make %s executable: %s", p.startScript, err.Error())
-		return err
+// augmentClasspath prepends additional library paths into the start script's classpath declaration.
+//
+// Post-2.2 scripts (post22.rb):
+//
+//	Replaces:  declare -r app_classpath="<existing>"
+//	With:      declare -r app_classpath="$app_home/<rel1>:$app_home/<rel2>:<existing>"
+//
+// Pre-2.2 dist scripts (pre22_dist.rb, Play 2.1):
+//
+//	Replaces:  classpath="<existing>"
+//	With:      classpath="$scriptdir/<rel1>:$scriptdir/<rel2>:<existing>"
+//
+// Pre-2.2 dist scripts (pre22_dist.rb, Play 2.0) and Pre-2.2 staged:
+//
+//	Symlinks additional libraries directly into the lib directory (link_to).
+//	In Go we copy the runtime paths directly into the script environment via profile.d instead.
+func (p *PlayContainer) augmentClasspath(scriptPath string, additionalLibs []string) error {
+	switch p.playType {
+	case "post22_dist", "post22_staged":
+		return p.augmentPost22Classpath(scriptPath, additionalLibs)
+	case "pre22_dist":
+		if p.playVersion != "" && strings.HasPrefix(p.playVersion, "2.0") {
+			// Play 2.0: link_to behaviour — handled via profile.d CLASSPATH, nothing to do in the script
+			return nil
+		}
+		return p.augmentPre22DistClasspath(scriptPath, additionalLibs)
+	case "pre22_staged":
+		// link_to behaviour — handled via profile.d CLASSPATH
+		return nil
 	}
-
-	p.context.Log.Debug("Made %s executable", p.startScript)
 	return nil
 }
 
-// Finalize performs final configuration for the Play Framework application
+// augmentPost22Classpath prepends additional libraries to the `declare -r app_classpath="..."` line.
+// Ruby: update_file start_script, /^declare -r app_classpath="(.*)"$/, "declare -r app_classpath=\"#{additional}:\\1\""
+func (p *PlayContainer) augmentPost22Classpath(scriptPath string, additionalLibs []string) error {
+	scriptDir := filepath.Dir(scriptPath)
+	var classpathEntries []string
+	for _, lib := range additionalLibs {
+		rel, err := filepath.Rel(scriptDir, lib)
+		if err != nil {
+			rel = lib
+		}
+		classpathEntries = append(classpathEntries, "$app_home/"+filepath.ToSlash(rel))
+	}
+
+	prefix := strings.Join(classpathEntries, ":")
+	pattern := regexp.MustCompile(`(?m)^(declare -r app_classpath=")(.*)(")\s*$`)
+	return p.replaceInFileRegexp(scriptPath, pattern, "${1}"+prefix+":${2}${3}")
+}
+
+// augmentPre22DistClasspath prepends additional libraries to the `classpath="..."` line.
+// Ruby: update_file start_script, /^classpath="(.*)"$/, "classpath=\"#{additional}:\\1\""
+func (p *PlayContainer) augmentPre22DistClasspath(scriptPath string, additionalLibs []string) error {
+	scriptDir := filepath.Dir(scriptPath)
+	var classpathEntries []string
+	for _, lib := range additionalLibs {
+		rel, err := filepath.Rel(scriptDir, lib)
+		if err != nil {
+			rel = lib
+		}
+		classpathEntries = append(classpathEntries, "$scriptdir/"+filepath.ToSlash(rel))
+	}
+
+	prefix := strings.Join(classpathEntries, ":")
+	pattern := regexp.MustCompile(`(?m)^(classpath=")(.*)(")\s*$`)
+	return p.replaceInFileRegexp(scriptPath, pattern, "${1}"+prefix+":${2}${3}")
+}
+
+// Finalize writes the http.port system property to JAVA_OPTS.
+// (Ruby base.rb release(): @droplet.java_opts.add_system_property 'http.port', '$PORT')
 func (p *PlayContainer) Finalize() error {
 	p.context.Log.BeginStep("Finalizing Play Framework %s", p.playVersion)
 
-	// Collect additional libraries (JVMKill agent, frameworks, etc.)
-	additionalLibs := p.collectAdditionalLibraries()
-	p.context.Log.Info("Found %d additional libraries for CLASSPATH", len(additionalLibs))
-
-	// Build CLASSPATH from additional libraries
-	// Convert staging paths to runtime paths
-	classpathParts := p.buildRuntimeClasspath(additionalLibs)
-
-	// Determine the script directory based on Play type
-	var scriptDir string
-	switch p.playType {
-	case "post22_dist":
-		scriptDir = "application-root/bin"
-	case "post22_staged":
-		scriptDir = "bin"
-	case "pre22_dist":
-		scriptDir = "application-root"
-	case "pre22_staged":
-		scriptDir = "."
-	default:
-		scriptDir = "bin"
-	}
-
-	// Write profile.d script that sets up environment variables
-	// This follows the immutable BuildDir pattern: configure via environment, don't modify files
-	envContent := fmt.Sprintf(`export DEPS_DIR=${DEPS_DIR:-/home/vcap/deps}
-export PLAY_HOME=$HOME
-export PLAY_BIN=$HOME/%s
-export PATH=$PLAY_BIN:$PATH
-
-# Prepend additional libraries to CLASSPATH
-# Play start scripts respect CLASSPATH environment variable
-# This includes JVMKill agent, framework JARs, JDBC drivers, etc.
-`, scriptDir)
-
-	// Add CLASSPATH if we have additional libraries
-	if len(classpathParts) > 0 {
-		classpathValue := strings.Join(classpathParts, ":")
-		envContent += fmt.Sprintf("export CLASSPATH=\"%s:${CLASSPATH:-}\"\n", classpathValue)
-		p.context.Log.Info("Configured CLASSPATH with %d additional libraries", len(classpathParts))
-	}
-
-	if err := p.context.Stager.WriteProfileD("play.sh", envContent); err != nil {
-		p.context.Log.Warning("Could not write play.sh profile.d script: %s", err.Error())
-	} else {
-		p.context.Log.Debug("Created profile.d script: play.sh")
-	}
-
-	// Configure JAVA_OPTS to be picked up by Play startup scripts
-	// Play uses -Dhttp.port system property to configure the HTTP port
-	// Note: JVMKill agent is configured by the JRE component via .profile.d/java_opts.sh
-	javaOpts := []string{
-		"-Dhttp.port=$PORT",
-		"-Djava.io.tmpdir=$TMPDIR",
-		"-XX:+ExitOnOutOfMemoryError",
-	}
-
-	// Play start scripts respect JAVA_OPTS environment variable
-	// Write JAVA_OPTS for the startup script to use
-	if err := p.context.Stager.WriteEnvFile("JAVA_OPTS",
-		strings.Join(javaOpts, " ")); err != nil {
+	if err := p.context.Stager.WriteEnvFile("JAVA_OPTS", "-Dhttp.port=$PORT"); err != nil {
 		return fmt.Errorf("failed to write JAVA_OPTS: %w", err)
 	}
 
-	p.context.Log.Info("Play Framework finalization complete (using environment variables, not modifying scripts)")
+	p.context.Log.Info("Play Framework finalization complete")
 	return nil
 }
 
-// collectAdditionalLibraries gathers all additional libraries that should be added to CLASSPATH
-// This includes framework-provided JAR libraries installed during supply phase
-func (p *PlayContainer) collectAdditionalLibraries() []string {
-	var libs []string
-	depsDir := p.context.Stager.DepDir()
-
-	// Scan $DEPS_DIR/<idx>/ for all framework directories
-	entries, err := os.ReadDir(depsDir)
-	if err != nil {
-		p.context.Log.Debug("Unable to read deps directory: %s", err.Error())
-		return libs
-	}
-
-	// Iterate through each framework directory
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-
-		frameworkDir := filepath.Join(depsDir, entry.Name())
-
-		// Find all *.jar files in this framework directory
-		jarPattern := filepath.Join(frameworkDir, "*.jar")
-		matches, err := filepath.Glob(jarPattern)
-		if err != nil {
-			p.context.Log.Debug("Error globbing JARs in %s: %s", frameworkDir, err.Error())
-			continue
-		}
-
-		// Add all found JARs to the list
-		// NOTE: Native libraries (.so, .dylib files like jvmkill) are NOT added here
-		// Native libraries are loaded via -agentpath in JAVA_OPTS
-		for _, jar := range matches {
-			// Skip native libraries - only include .jar files
-			if filepath.Ext(jar) == ".jar" {
-				libs = append(libs, jar)
-			}
-		}
-	}
-
-	return libs
-}
-
-// buildRuntimeClasspath converts staging-time library paths to runtime paths
-// At staging time, libraries are in $DEPS_DIR/<idx>/<framework>/*.jar
-// At runtime, they'll be in /home/vcap/deps/<idx>/<framework>/*.jar
-func (p *PlayContainer) buildRuntimeClasspath(libs []string) []string {
-	var classpathParts []string
-	depsDir := p.context.Stager.DepDir()
-	buildDir := p.context.Stager.BuildDir()
-	depsIdx := p.context.Stager.DepsIdx()
-
-	for _, lib := range libs {
-		var runtimePath string
-
-		// Check if library is in deps directory
-		if strings.HasPrefix(lib, depsDir) {
-			// Convert to runtime $DEPS_DIR path
-			relPath, err := filepath.Rel(depsDir, lib)
-			if err != nil {
-				p.context.Log.Warning("Could not calculate relative path for %s: %s", lib, err.Error())
-				continue
-			}
-			relPath = filepath.ToSlash(relPath)
-			runtimePath = fmt.Sprintf("$DEPS_DIR/%s/%s", depsIdx, relPath)
-		} else if strings.HasPrefix(lib, buildDir) {
-			// Convert to runtime $HOME path
-			relPath, err := filepath.Rel(buildDir, lib)
-			if err != nil {
-				p.context.Log.Warning("Could not calculate relative path for %s: %s", lib, err.Error())
-				continue
-			}
-			relPath = filepath.ToSlash(relPath)
-			runtimePath = fmt.Sprintf("$HOME/%s", relPath)
-		} else {
-			// Fallback: library path doesn't match expected patterns
-			p.context.Log.Warning("Library path %s doesn't match deps or build directory, using as-is", lib)
-			runtimePath = lib
-		}
-
-		classpathParts = append(classpathParts, runtimePath)
-	}
-
-	return classpathParts
-}
-
-// Release returns the command to start the Play Framework application
+// Release returns the command to start the Play Framework application.
+//
+// Ruby base.rb release():
+//
+//	exec <start_script> <java_opts>
+//
+// Post-2.2 java_opts (post22.rb):  $(for I in $JAVA_OPTS ; do echo "-J$I" ; done)
+// Pre-2.2 java_opts  (pre22.rb):   $JAVA_OPTS
 func (p *PlayContainer) Release() (string, error) {
-	// Check if Detect() was called successfully
 	if p.playType == "" {
 		return "", fmt.Errorf("no Play application detected, Detect() must be called first")
 	}
 
-	// Play Framework start command varies by type
-	var cmd string
-
-	// If we have a start script, use it
 	if p.startScript != "" {
-		// Use absolute path with $HOME prefix to ensure the script can be found at runtime
-		// Cloud Foundry sets $HOME to the application root directory
-		cmd = fmt.Sprintf("$HOME/%s", p.startScript)
-	} else {
-		// No start script - use java command with NettyServer
-		// This is for staged apps without start scripts
-		libPath := filepath.ToSlash(p.libDir)
-		// For staged apps, libDir is relative to buildDir, convert to $HOME
-		if p.playType == "pre22_staged" || p.playType == "post22_staged" {
-			relPath, err := filepath.Rel(p.context.Stager.BuildDir(), p.libDir)
-			if err == nil {
-				libPath = filepath.ToSlash(relPath)
-			}
-		}
-		// Use eval to properly handle backslash-escaped values in $JAVA_OPTS (Ruby buildpack parity)
-		cmd = fmt.Sprintf("eval exec java $JAVA_OPTS -cp $HOME/%s/* play.core.server.NettyServer $HOME", libPath)
+		// exec <path> <java_opts>
+		// Ruby: qualify_path(start_script, @droplet.root) → at runtime this is $HOME/<relative>
+		scriptCmd := "$HOME/" + filepath.ToSlash(p.startScript)
+		javaOpts := p.javaOptsExpression()
+		return fmt.Sprintf("exec %s %s", scriptCmd, javaOpts), nil
 	}
 
-	p.context.Log.Debug("Play Framework release command: %s", cmd)
-	return cmd, nil
+	// No start script — fall back to direct java invocation (staged apps without a script)
+	relLib, err := filepath.Rel(p.context.Stager.BuildDir(), p.libDir)
+	if err != nil {
+		relLib = p.libDir
+	}
+	relLib = filepath.ToSlash(relLib)
+	return fmt.Sprintf("eval exec java $JAVA_OPTS -cp $HOME/%s/* play.core.server.NettyServer $HOME", relLib), nil
 }
 
-// Validate checks for ambiguous Play configurations
-// This should be called during detection to reject hybrid apps
+// javaOptsExpression returns the shell expression used to pass JAVA_OPTS to the start script.
+// Post-2.2: $(for I in $JAVA_OPTS ; do echo "-J$I" ; done)   (post22.rb)
+// Pre-2.2:  $JAVA_OPTS                                         (pre22.rb)
+func (p *PlayContainer) javaOptsExpression() string {
+	if strings.HasPrefix(p.playType, "post22") {
+		return `$(for I in $JAVA_OPTS ; do echo "-J$I" ; done)`
+	}
+	return "$JAVA_OPTS"
+}
+
+// Validate rejects applications that match more than one Play variant (ambiguous).
+// Ruby factory.rb: raise if candidates.size > 1
 func (p *PlayContainer) Validate() error {
 	buildDir := p.context.Stager.BuildDir()
 
-	// Check for ambiguous Play 2.1/2.2 hybrid configurations
-	// This happens when both Pre22 and Post22 structures exist
+	var detected []string
+	probe := &PlayContainer{context: p.context}
 
-	detected := []string{}
-
-	if p.detectPost22Dist(buildDir) {
+	if probe.detectPost22Dist(buildDir) {
 		detected = append(detected, "Post22Dist")
 	}
-	if p.detectPost22Staged(buildDir) {
+	probe = &PlayContainer{context: p.context}
+	if probe.detectPost22Staged(buildDir) {
 		detected = append(detected, "Post22Staged")
 	}
-	if p.detectPre22Dist(buildDir) {
+	probe = &PlayContainer{context: p.context}
+	if probe.detectPre22Dist(buildDir) {
 		detected = append(detected, "Pre22Dist")
 	}
-	if p.detectPre22Staged(buildDir) {
+	probe = &PlayContainer{context: p.context}
+	if probe.detectPre22Staged(buildDir) {
 		detected = append(detected, "Pre22Staged")
 	}
 
 	if len(detected) > 1 {
 		return fmt.Errorf("Play Framework application version cannot be determined: %v", detected)
 	}
-
 	return nil
+}
+
+// ---- helpers ----------------------------------------------------------------
+
+func isDir(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
+}
+
+// findPlayJar finds the Play Framework JAR in a directory and returns (filename, version).
+// Matches: com.typesafe.play.play_*-<version>.jar  (Post-2.2)
+//
+//	play.play_*-<version>.jar                   (Play 2.0)
+//	play_*-<version>.jar                        (Play 2.1)
+func (p *PlayContainer) findPlayJar(libDir string) (string, string) {
+	entries, err := os.ReadDir(libDir)
+	if err != nil {
+		return "", ""
+	}
+
+	// Ruby base.rb: (lib_dir + '*play_*-*.jar').glob.first
+	playJarPattern := regexp.MustCompile(`^(?:com\.typesafe\.)?play(?:\.play)?_.*-(.+)\.jar$`)
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if matches := playJarPattern.FindStringSubmatch(entry.Name()); matches != nil {
+			version := matches[1]
+			p.context.Log.Debug("Found Play JAR: %s (version: %s)", entry.Name(), version)
+			return entry.Name(), version
+		}
+	}
+	return "", ""
+}
+
+// findStartScript returns the name of the first non-.bat file in binDir.
+func (p *PlayContainer) findStartScript(binDir string) string {
+	entries, err := os.ReadDir(binDir)
+	if err != nil {
+		return ""
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) != ".bat" {
+			return entry.Name()
+		}
+	}
+	return ""
+}
+
+// isPost22Version returns true when version is 2.2 or higher.
+func (p *PlayContainer) isPost22Version(version string) bool {
+	parts := strings.Split(version, ".")
+	if len(parts) < 2 {
+		return false
+	}
+	var major, minor int
+	fmt.Sscanf(parts[0], "%d", &major)
+	fmt.Sscanf(parts[1], "%d", &minor)
+	return major > 2 || (major == 2 && minor >= 2)
+}
+
+// collectAdditionalLibraries returns all JAR paths installed under DepDir by supply buildpacks.
+func (p *PlayContainer) collectAdditionalLibraries() []string {
+	var libs []string
+	depsDir := p.context.Stager.DepDir()
+
+	entries, err := os.ReadDir(depsDir)
+	if err != nil {
+		p.context.Log.Debug("Unable to read deps directory: %s", err.Error())
+		return libs
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		matches, err := filepath.Glob(filepath.Join(depsDir, entry.Name(), "*.jar"))
+		if err != nil {
+			continue
+		}
+		libs = append(libs, matches...)
+	}
+	return libs
+}
+
+// replaceInFile does a literal string replacement inside a file.
+// Ruby base.rb: update_file(path, pattern, replacement)
+func (p *PlayContainer) replaceInFile(path, old, newStr string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	updated := strings.ReplaceAll(string(data), old, newStr)
+	return os.WriteFile(path, []byte(updated), 0644)
+}
+
+// replaceInFileRegexp does a regexp replacement inside a file.
+func (p *PlayContainer) replaceInFileRegexp(path string, pattern *regexp.Regexp, replacement string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	updated := pattern.ReplaceAllString(string(data), replacement)
+	return os.WriteFile(path, []byte(updated), 0644)
 }
