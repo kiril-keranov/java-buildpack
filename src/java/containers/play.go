@@ -392,11 +392,6 @@ func (p *PlayContainer) Validate() error {
 
 // ---- helpers ----------------------------------------------------------------
 
-func isDir(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.IsDir()
-}
-
 // findPlayJar finds the Play Framework JAR in a directory and returns (filename, version).
 // Matches: com.typesafe.play.play_*-<version>.jar  (Post-2.2)
 //
