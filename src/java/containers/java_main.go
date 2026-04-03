@@ -1,8 +1,8 @@
 package containers
 
 import (
-	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"fmt"
+	"github.com/cloudfoundry/java-buildpack/src/java/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,7 +31,7 @@ func (j *JavaMainContainer) Detect() (string, error) {
 	if mainClass != "" {
 		j.mainClass = mainClass
 		j.jarFile = jarFile
-		j.context.Log.Debug("Detected Java Main application: %s (main: %s)", jarFile, mainClass)
+		j.context.Log.Error("Detected Java Main application: %s (main: %s)", jarFile, mainClass)
 		return "Java Main", nil
 	}
 
@@ -41,7 +41,7 @@ func (j *JavaMainContainer) Detect() (string, error) {
 		// Read manifest for Main-Class
 		if mainClass := j.readMainClassFromManifest(manifestPath); mainClass != "" {
 			j.mainClass = mainClass
-			j.context.Log.Debug("Detected Java Main application via MANIFEST.MF: %s", mainClass)
+			j.context.Log.Error("Detected Java Main application via MANIFEST.MF: %s", mainClass)
 			return "Java Main", nil
 		}
 	}
@@ -49,7 +49,7 @@ func (j *JavaMainContainer) Detect() (string, error) {
 	// Check for compiled .class files
 	classFiles, err := filepath.Glob(filepath.Join(buildDir, "*.class"))
 	if err == nil && len(classFiles) > 0 {
-		j.context.Log.Debug("Detected compiled Java classes")
+		j.context.Log.Error("Detected compiled Java classes")
 		return "Java Main", nil
 	}
 
