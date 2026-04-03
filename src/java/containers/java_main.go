@@ -67,8 +67,8 @@ func (j *JavaMainContainer) findMainClass(buildDir string) (string, string) {
 		if entry.IsDir() {
 			continue
 		}
-
 		name := entry.Name()
+		j.context.Log.Error("Looping in entries: %s", name)
 		if strings.HasSuffix(name, ".jar") {
 			// TODO: In full implementation, extract and read MANIFEST.MF
 			// For now, assume any JAR could be a main JAR
