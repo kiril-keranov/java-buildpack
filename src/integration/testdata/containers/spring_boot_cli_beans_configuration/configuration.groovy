@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
-beans {
-    customMessage(String, "Hello from beans DSL")
+@Configuration
+class BeansConfig {
+    @Bean
+    String customMessage() {
+        "Hello from beans DSL"
+    }
 }

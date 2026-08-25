@@ -570,7 +570,7 @@ dependencies:
   source_sha256: df53f2588671c79293a3efcff1d8f98d1483bf4ca4360c45e8fb8c57e5127b25
 - name: spring-boot-cli
   version: 4.0.8
-  uri: https://buildpacks.cloudfoundry.org/dependencies/spring-boot-cli/spring-boot-cli_4.0.8_linux_noarch_any-stack_77b40c1e.tgz
+  uri: https://repo1.maven.org/maven2/org/springframework/boot/spring-boot-cli/4.0.8/spring-boot-cli-4.0.8-bin.tar.gz
   sha256: 77b40c1eff0fcc025180e9fe09e1b781291f1e6336f5e18b45c503a95b26dd12
   cf_stacks:
   - cflinuxfs4

@@ -14,8 +14,7 @@ var (
 	mainMethodPattern = regexp.MustCompile(`static\s+void\s+main\s*\(`)
 	pogoPattern       = regexp.MustCompile(`class\s+\w+[\s\w]*\{`)
 	shebangPattern    = regexp.MustCompile(`^#!`)
-	beansPattern      = regexp.MustCompile(`beans\s*\{`)
-	logbackPattern    = regexp.MustCompile(`ch/qos/logback/.*\.groovy$`)
+	logbackPattern = regexp.MustCompile(`ch/qos/logback/.*\.groovy$`)
 )
 
 // GroovyUtils struct provides instance methods for SpringBootCLI compatibility
@@ -66,15 +65,6 @@ func (g *GroovyUtils) HasShebang(filePath string) bool {
 		return false
 	}
 	return shebangPattern.Match(content)
-}
-
-// IsBeans checks if a Groovy file is a beans-style configuration
-func (g *GroovyUtils) IsBeans(filePath string) bool {
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return false
-	}
-	return beansPattern.Match(content)
 }
 
 // isValidGroovyFile checks if a file is a valid, readable Groovy script

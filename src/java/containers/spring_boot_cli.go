@@ -45,8 +45,8 @@ func (s *SpringBootCLIContainer) Detect() (string, error) {
 		return "", nil
 	}
 
-	// All Groovy files must be POGO or beans configuration
-	if !s.allPOGOOrConfiguration(groovyFiles) {
+	// All Groovy files must be POGOs
+	if !s.allPOGO(groovyFiles) {
 		return "", nil
 	}
 
@@ -175,11 +175,11 @@ func (s *SpringBootCLIContainer) Release() (string, error) {
 
 // Helper methods
 
-// allPOGOOrConfiguration checks if all Groovy files are POGO or beans configuration
-func (s *SpringBootCLIContainer) allPOGOOrConfiguration(files []string) bool {
+// allPOGO checks if all Groovy files are Plain Old Groovy Objects
+func (s *SpringBootCLIContainer) allPOGO(files []string) bool {
 	for _, file := range files {
-		if !s.groovyUtils.IsPOGO(file) && !s.groovyUtils.IsBeans(file) {
-			s.context.Log.Debug("File %s is neither POGO nor beans configuration", file)
+		if !s.groovyUtils.IsPOGO(file) {
+			s.context.Log.Debug("File %s is not a POGO", file)
 			return false
 		}
 	}

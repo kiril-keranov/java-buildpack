@@ -101,17 +101,6 @@ println 'Hello'`, false),
 		})
 	})
 
-	Describe("IsBeans", func() {
-		DescribeTable("detecting beans-style configuration",
-			func(content string, expected bool) {
-				Expect(g.IsBeans(groovyFile(content))).To(Equal(expected))
-			},
-			Entry("has beans block", `beans {
-	bean(MyBean)
-}`, true),
-			Entry("no beans block", `class Alpha {}`, false),
-		)
-	})
 })
 
 var _ = Describe("FindMainGroovyScript", func() {
