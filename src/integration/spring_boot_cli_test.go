@@ -39,7 +39,7 @@ func testSpringBootCLI(platform switchblade.Platform, fixtures string) func(*tes
 			it("successfully deploys a valid Spring Boot CLI app", func() {
 				deployment, logs, err := platform.Deploy.
 					WithEnv(map[string]string{
-						"BP_JAVA_VERSION": "11",
+						"BP_JAVA_VERSION": "17",
 					}).
 					Execute(name, filepath.Join(fixtures, "containers", "spring_boot_cli_valid_app"))
 				Expect(err).NotTo(HaveOccurred(), logs.String)
@@ -51,7 +51,7 @@ func testSpringBootCLI(platform switchblade.Platform, fixtures string) func(*tes
 			it("successfully deploys with beans configuration", func() {
 				deployment, logs, err := platform.Deploy.
 					WithEnv(map[string]string{
-						"BP_JAVA_VERSION": "11",
+						"BP_JAVA_VERSION": "17",
 					}).
 					Execute(name, filepath.Join(fixtures, "containers", "spring_boot_cli_beans_configuration"))
 				Expect(err).NotTo(HaveOccurred(), logs.String)
@@ -63,7 +63,7 @@ func testSpringBootCLI(platform switchblade.Platform, fixtures string) func(*tes
 			it("successfully deploys non-POGO Groovy scripts", func() {
 				deployment, logs, err := platform.Deploy.
 					WithEnv(map[string]string{
-						"BP_JAVA_VERSION": "11",
+						"BP_JAVA_VERSION": "17",
 					}).
 					Execute(name, filepath.Join(fixtures, "containers", "spring_boot_cli_non_pogo"))
 				Expect(err).NotTo(HaveOccurred(), logs.String)
@@ -75,7 +75,7 @@ func testSpringBootCLI(platform switchblade.Platform, fixtures string) func(*tes
 			it("successfully deploys with main method", func() {
 				deployment, logs, err := platform.Deploy.
 					WithEnv(map[string]string{
-						"BP_JAVA_VERSION": "11",
+						"BP_JAVA_VERSION": "17",
 					}).
 					Execute(name, filepath.Join(fixtures, "containers", "spring_boot_cli_main_method"))
 				Expect(err).NotTo(HaveOccurred(), logs.String)
@@ -87,7 +87,7 @@ func testSpringBootCLI(platform switchblade.Platform, fixtures string) func(*tes
 			it("successfully deploys Groovy with WEB-INF", func() {
 				deployment, logs, err := platform.Deploy.
 					WithEnv(map[string]string{
-						"BP_JAVA_VERSION": "11",
+						"BP_JAVA_VERSION": "17",
 					}).
 					Execute(name, filepath.Join(fixtures, "containers", "spring_boot_cli_groovy_with_web_inf"))
 				Expect(err).NotTo(HaveOccurred(), logs.String)
